@@ -1,8 +1,7 @@
-name: Build App
+name: Build APK Release
 
 on:
   workflow_dispatch:
-  push:
 
 jobs:
   build:
@@ -21,6 +20,11 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
-      - name: Gradle assemble (test)
-        path: app/build/outputs/apk/**/app-*.apk
-        run: ./gradlew tasks
+      - name: Build Release APK
+        run: ./gradlew app:assembleRelease
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v3
+        with:
+          name: app-release
+          path: app/build/outputs/apk/release/*.apk
