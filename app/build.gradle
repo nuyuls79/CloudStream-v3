@@ -1,0 +1,166 @@
+plugins {
+    id 'com.android.application'
+    id 'kotlin-android'
+    id 'kotlin-kapt'
+    id 'kotlin-android-extensions'
+}
+
+def tmpFilePath = System.getProperty("user.home") + "/work/_temp/keystore/"
+def allFilesFromDir = new File(tmpFilePath).listFiles()
+def prerelaseStoreFile = null
+if (allFilesFromDir != null) {
+    prerelaseStoreFile = allFilesFromDir.first()
+}
+
+android {
+    testOptions {
+        unitTests.returnDefaultValues = true
+    }
+
+    signingConfigs {
+        debug {
+            if (prerelaseStoreFile != null) {
+                storeFile = file(prerelaseStoreFile)
+                storePassword System.getenv("SIGNING_STORE_PASSWORD")
+                keyAlias System.getenv("SIGNING_KEY_ALIAS")
+                keyPassword System.getenv("SIGNING_KEY_PASSWORD")
+            }
+        }
+        release {
+            if (prerelaseStoreFile != null) {
+                storeFile = file(prerelaseStoreFile)
+                storePassword System.getenv("SIGNING_STORE_PASSWORD")
+                keyAlias System.getenv("SIGNING_KEY_ALIAS")
+                keyPassword System.getenv("SIGNING_KEY_PASSWORD")
+            }
+        }
+    }
+
+    compileSdkVersion 31
+    buildToolsVersion "30.0.3"
+
+    defaultConfig {
+        applicationId "foss.jacekun.cloudstream3xxx"
+        minSdkVersion 21          // Android 5+
+        targetSdkVersion 28       // Aman untuk Android 6
+        multiDexEnabled true
+
+        versionCode 1607
+        versionName "3.0.1"
+
+        resValue "string", "app_version",
+                "${defaultConfig.versionName}${versionNameSuffix ?: ""}"
+
+        buildConfigField(
+                "String",
+                "BUILDDATE",
+                "new java.text.SimpleDateFormat(\"yyyy-MM-dd HH:mm\").format(new java.util.Date(${System.currentTimeMillis()}L))"
+        )
+
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        archivesBaseName = "${applicationId}-r${versionCode}"
+
+        kapt {
+            includeCompileClasspath = true
+        }
+    }
+
+    buildTypes {
+        release {
+            debuggable false
+            minifyEnabled false
+            shrinkResources false
+            signingConfig signingConfigs.release
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+        prerelease {
+            applicationIdSuffix ".prerelease"
+            buildConfigField "boolean", "BETA", "true"
+            versionNameSuffix "-PRE"
+            signingConfig signingConfigs.debug
+            debuggable false
+        }
+        debug {
+            debuggable true
+            applicationIdSuffix ".debug"
+            versionNameSuffix "-DEBUG"
+            signingConfig signingConfigs.debug
+        }
+    }
+
+    compileOptions {
+        coreLibraryDesugaringEnabled true
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+
+    kotlinOptions {
+        jvmTarget = '1.8'
+        freeCompilerArgs = ['-Xjvm-default=compatibility']
+    }
+}
+
+repositories {
+    maven { url 'https://jitpack.io' }
+}
+
+dependencies {
+
+    /* ======================
+       CORE / UI
+       ====================== */
+    implementation 'androidx.core:core-ktx:1.8.0'
+    implementation 'androidx.appcompat:appcompat:1.4.2'
+    implementation 'com.google.android.material:material:1.5.0'
+    implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
+    implementation 'androidx.preference:preference-ktx:1.2.0'
+
+    /* ======================
+       SSL FIX ANDROID 6 (WAJIB)
+       ====================== */
+    implementation 'org.conscrypt:conscrypt-android:2.5.2'
+
+    /* ======================
+       NETWORKING (ANDROID 6 SAFE)
+       ====================== */
+    implementation 'com.squareup.okhttp3:okhttp:3.12.13'
+    implementation 'com.squareup.okhttp3:logging-interceptor:3.12.13'
+
+    // ❌ JANGAN dipakai di Android 6 (penyebab SSL error)
+    // implementation "io.karn:khttp-android:0.1.2"
+
+    /* ======================
+       EXOPLAYER
+       ====================== */
+    implementation 'com.google.android.exoplayer:exoplayer:2.16.1'
+    implementation 'com.google.android.exoplayer:extension-okhttp:2.16.1'
+    implementation 'com.google.android.exoplayer:extension-mediasession:2.16.1'
+
+    /* ======================
+       IMAGE / UI
+       ====================== */
+    implementation 'com.github.bumptech.glide:glide:4.13.1'
+    kapt 'com.github.bumptech.glide:compiler:4.13.1'
+    implementation 'jp.wasabeef:glide-transformations:4.3.0'
+    implementation 'com.facebook.shimmer:shimmer:0.5.0'
+
+    /* ======================
+       UTIL
+       ====================== */
+    implementation 'org.mozilla:rhino:1.7.14'
+    implementation 'com.jaredrummler:colorpicker:1.1.0'
+    implementation 'com.github.albfernandez:juniversalchardet:2.4.0'
+    implementation "com.github.tachiyomiorg:unifile:17bec43"
+    implementation "com.uwetrottmann.tmdb2:tmdb-java:2.6.0"
+
+    /* ======================
+       WORK / BACKGROUND
+       ====================== */
+    implementation "androidx.work:work-runtime:2.7.1"
+    implementation "androidx.work:work-runtime-ktx:2.7.1"
+
+    /* ======================
+       DESUGARING
+       ====================== */
+    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:1.1.5'
+}
