@@ -3,31 +3,33 @@ apply plugin: 'kotlin-android'
 apply plugin: 'kotlin-kapt'
 apply plugin: 'kotlin-android-extensions'
 
-
 def tmpFilePath = System.getProperty("user.home") + "/work/_temp/keystore/"
 def allFilesFromDir = new File(tmpFilePath).listFiles()
-def prerelaseStoreFile = null
+def prereleaseStoreFile = null
 if (allFilesFromDir != null) {
-    prerelaseStoreFile = allFilesFromDir.first()
+    prereleaseStoreFile = allFilesFromDir.first()
 }
 
 android {
+    compileSdkVersion 31
+    buildToolsVersion "30.0.3"
+
     testOptions {
         unitTests.returnDefaultValues = true
     }
 
     signingConfigs {
         debug {
-            if (prerelaseStoreFile != null) {
-                storeFile = file(prerelaseStoreFile)
+            if (prereleaseStoreFile != null) {
+                storeFile file(prereleaseStoreFile)
                 storePassword System.getenv("SIGNING_STORE_PASSWORD")
                 keyAlias System.getenv("SIGNING_KEY_ALIAS")
                 keyPassword System.getenv("SIGNING_KEY_PASSWORD")
             }
         }
         release {
-            if (prerelaseStoreFile != null) {
-                storeFile = file(prerelaseStoreFile)
+            if (prereleaseStoreFile != null) {
+                storeFile file(prereleaseStoreFile)
                 storePassword System.getenv("SIGNING_STORE_PASSWORD")
                 keyAlias System.getenv("SIGNING_KEY_ALIAS")
                 keyPassword System.getenv("SIGNING_KEY_PASSWORD")
@@ -35,6 +37,113 @@ android {
         }
     }
 
+    defaultConfig {
+        applicationId "foss.jacekun.cloudstream3xxx"
+        minSdkVersion 21
+        targetSdkVersion 28
+        multiDexEnabled true
+
+        versionCode 1607
+        versionName "3.0.1"
+
+        resValue "string", "app_version",
+                "${versionName}"
+
+        buildConfigField(
+                "String",
+                "BUILDDATE",
+                "\"${new Date().format("yyyy-MM-dd HH:mm")}\""
+        )
+
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        archivesBaseName = "${applicationId}-r${versionCode}"
+    }
+
+    buildTypes {
+        release {
+            debuggable false
+            minifyEnabled false
+            shrinkResources false
+            signingConfig signingConfigs.release
+            proguardFiles getDefaultProguardFile(
+                    'proguard-android-optimize.txt'
+            ), 'proguard-rules.pro'
+        }
+        prerelease {
+            applicationIdSuffix ".prerelease"
+            versionNameSuffix "-PRE"
+            buildConfigField "boolean", "BETA", "true"
+            signingConfig signingConfigs.debug
+            debuggable false
+        }
+        debug {
+            applicationIdSuffix ".debug"
+            versionNameSuffix "-DEBUG"
+            debuggable true
+            signingConfig signingConfigs.debug
+        }
+    }
+
+    compileOptions {
+        coreLibraryDesugaringEnabled true
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+
+    kotlinOptions {
+        jvmTarget = '1.8'
+        freeCompilerArgs = ['-Xjvm-default=compatibility']
+    }
+}
+
+/* ⬇️ WAJIB DI LUAR android {} */
+kapt {
+    includeCompileClasspath = true
+}
+
+repositories {
+    maven { url 'https://jitpack.io' }
+}
+
+dependencies {
+
+    implementation 'androidx.core:core-ktx:1.8.0'
+    implementation 'androidx.appcompat:appcompat:1.4.2'
+    implementation 'com.google.android.material:material:1.5.0'
+    implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
+    implementation 'androidx.preference:preference-ktx:1.2.0'
+
+    // SSL Android 6
+    implementation 'org.conscrypt:conscrypt-android:2.5.2'
+
+    // Networking safe Android 6
+    implementation 'com.squareup.okhttp3:okhttp:3.12.13'
+    implementation 'com.squareup.okhttp3:logging-interceptor:3.12.13'
+
+    // Exoplayer
+    implementation 'com.google.android.exoplayer:exoplayer:2.16.1'
+    implementation 'com.google.android.exoplayer:extension-okhttp:2.16.1'
+    implementation 'com.google.android.exoplayer:extension-mediasession:2.16.1'
+
+    // UI
+    implementation 'com.github.bumptech.glide:glide:4.13.1'
+    kapt 'com.github.bumptech.glide:compiler:4.13.1'
+    implementation 'jp.wasabeef:glide-transformations:4.3.0'
+    implementation 'com.facebook.shimmer:shimmer:0.5.0'
+
+    // Utils
+    implementation 'org.mozilla:rhino:1.7.14'
+    implementation 'com.jaredrummler:colorpicker:1.1.0'
+    implementation 'com.github.albfernandez:juniversalchardet:2.4.0'
+    implementation "com.github.tachiyomiorg:unifile:17bec43"
+    implementation "com.uwetrottmann.tmdb2:tmdb-java:2.6.0"
+
+    // WorkManager
+    implementation "androidx.work:work-runtime:2.7.1"
+    implementation "androidx.work:work-runtime-ktx:2.7.1"
+
+    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:1.1.5'
+}
     compileSdkVersion 31
     buildToolsVersion "30.0.3"
 
