@@ -597,32 +597,7 @@
         <item name="android:insetTop">0dp</item>
     </style>
 
-    <!--@color/white ?attr/colorPrimary-->
-    <!--CHECK ?attr/darkBackground ?attr/colorPrimary-->
-    <!-- CHROMECAST -->
-    <style name="CustomCastExpandedController" parent="CastExpandedController">
-        <item name="castControlButtons">
-            @array/cast_expanded_controller_control_buttons
-        </item>
-        <!-- <item name="castButtonColor">@null</item>
-
-         <item name="castSeekBarSecondaryProgressColor">@color/darkBar
-         </item>
-         -->
-        <item name="castSeekBarProgressAndThumbColor">?attr/colorPrimary</item>
-        <item name="castBackground">?attr/colorPrimary</item>
-        <item name="castProgressBarColor">?attr/colorPrimary</item>
-        <item name="castPlayButtonDrawable">@drawable/ic_baseline_play_arrow_24</item>
-        <item name="castPauseButtonDrawable">@drawable/netflix_pause</item>
-        <item name="castStopButtonDrawable">@drawable/cast_ic_expanded_controller_stop</item>
-        <item name="castSkipPreviousButtonDrawable">
-            @drawable/cast_ic_expanded_controller_skip_previous
-        </item>
-        <item name="castSkipNextButtonDrawable">@drawable/cast_ic_expanded_controller_skip_next
-        </item>
-        <item name="castRewind30ButtonDrawable">@drawable/go_back_30</item>
-        <item name="castForward30ButtonDrawable">@drawable/go_forward_30</item>
-    </style>
+    
 
     
 </resources>
