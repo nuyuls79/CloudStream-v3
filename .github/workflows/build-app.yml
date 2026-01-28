@@ -1,229 +1,25 @@
 name: Build App
 
-on:   
+on:
   workflow_dispatch:
-
-concurrency: 
-  group: "release"
-  cancel-in-progress: true
+  push:
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-    # ===============================
-    # Checkout repository
-    # ===============================
-    - name: Checkout repository
-      uses: actions/checkout@v3
-      with:
-        fetch-depth: 0
+      - name: Checkout
+        uses: actions/checkout@v3
 
-    # ===============================
-    # Setup Java
-    # ===============================
-    - name: Set up JDK 11
-      uses: actions/setup-java@v3
-      with:
-        distribution: 'adopt'
-        java-version: '11'
+      - name: Set up JDK 11
+        uses: actions/setup-java@v3
+        with:
+          distribution: temurin
+          java-version: 11
 
-    # ===============================
-    # Grant gradlew permission
-    # ===============================
-    - name: Grant execute permission for gradlew
-      run: chmod +x gradlew
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
 
-    # ===============================
-    # Decode keystore (optional, aman walau kosong)
-    # ===============================
-    - name: Decode Keystore
-      if: secrets.KEYSTORE != ''
-      env:
-        ENCODED_STRING: ${{ secrets.KEYSTORE }}
-      run: |
-        TMP_KEYSTORE_FILE_PATH="${RUNNER_TEMP}/keystore"
-        mkdir -p "$TMP_KEYSTORE_FILE_PATH"
-        echo "$ENCODED_STRING" | base64 -d > "$TMP_KEYSTORE_FILE_PATH/release_keystore.keystore"
-
-    # ===============================
-    # Get commit count (branch javdev)
-    # ===============================
-    - name: Get commit count
-      run: |
-        echo "COMMIT_COUNT=$(git rev-list --count javdev)" >> $GITHUB_ENV
-
-    # ===============================
-    # Bump versionCode otomatis
-    # ===============================
-    - name: Bump versionCode
-      uses: chkfung/android-version-actions@v1.1
-      with:
-        gradlePath: app/build.gradle
-        versionCode: ${{ env.COMMIT_COUNT }}
-
-    # ===============================
-    # Build APK (Release)
-    # ===============================
-    - name: Build Release APK
-      run: ./gradlew app:assembleRelease
-      env:
-        SIGNING_KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS }}
-        SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
-        SIGNING_STORE_PASSWORD: ${{ secrets.SIGNING_STORE_PASSWORD }}
-
-    # ===============================
-    # Upload APK as Artifact (INI YANG SEBELUMNYA KURANG)
-    # ===============================
-    - name: Upload APK Artifact
-      uses: actions/upload-artifact@v3
-      with:
-        name: CloudStream-v3-Release-APK
-        path: app/build/outputs/apk/release/*.apk
-
-    # ===============================
-    # Read version history
-    # ===============================
-    - name: Read version history
-      id: currentBody
-      uses: juliangruber/read-file-action@v1
-      with:
-        path: doc/version_log.md
-
-    - name: Read unreleased body
-      id: unreleasedBody
-      uses: juliangruber/read-file-action@v1
-      with:
-        path: doc/unreleased.md
-
-    # ===============================
-    # Update version log
-    # ===============================
-    - name: Update version log
-      uses: DamianReeves/write-file-action@v1.0
-      with:
-        path: doc/version_log.md
-        write-mode: overwrite
-        contents: |
-          # CloudStream-3XXX r${{ env.COMMIT_COUNT }}
-          ${{ steps.unreleasedBody.outputs.content }}
-
-          ${{ steps.currentBody.outputs.content }}
-
-    # ===============================
-    # Clear unreleased file
-    # ===============================
-    - name: Clear unreleased file
-      uses: DamianReeves/write-file-action@v1.0
-      with:
-        path: doc/unreleased.md
-        write-mode: overwrite
-        contents: ""
-
-    # ===============================
-    # Save last tag
-    # ===============================
-    - name: Save last tag
-      uses: DamianReeves/write-file-action@v1.0
-      with:
-        path: doc/last_tag.txt
-        write-mode: overwrite
-        contents: jav_r${{ env.COMMIT_COUNT }}
-
-    # ===============================
-    # Commit changes
-    # ===============================
-    - name: Commit version bump
-      run: |
-        git config user.name "GitHub Actions"
-        git config user.email "actions@github.com"
-        git add .
-        git commit -m "[skip ci] bump version and update version history" || echo
-        git push
-
-    # ===============================
-    # Create GitHub Release
-    # ===============================
-    - name: Create GitHub Release
-      uses: softprops/action-gh-release@v1
-      with:
-        tag_name: jav_r${{ env.COMMIT_COUNT }}
-        name: CloudStream-3XXX r${{ env.COMMIT_COUNT }}
-        prerelease: false
-        files: app/build/outputs/apk/release/*.apk
-        body: |
-          ${{ steps.unreleasedBody.outputs.content }}    - name: Get commit count
-      run:  |
-        set -e
-        echo "COMMIT_COUNT=$(git rev-list --count javdev)" >> $GITHUB_ENV
-      
-    - name: Bump version
-      uses: chkfung/android-version-actions@v1.1
-      with:
-          gradlePath: app/build.gradle # or app/build.gradle.kts 
-          versionCode: ${{ env.COMMIT_COUNT }}
-        
-    - name: Run Gradle
-      run: ./gradlew app:assembleRelease
-      env:
-        SIGNING_KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS }}
-        SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
-        SIGNING_STORE_PASSWORD: ${{ secrets.SIGNING_STORE_PASSWORD }}
-      
-    - name: Read version history and save it
-      id: currentBody
-      uses: juliangruber/read-file-action@v1
-      with:
-        path: doc/version_log.md
-      
-    - name: Read unreleased version body
-      id: unreleasedbody
-      uses: juliangruber/read-file-action@v1
-      with:
-        path: doc/unreleased.md
-      
-    - name: Overwrite version history
-      uses: DamianReeves/write-file-action@v1.0
-      with:
-        path: doc/version_log.md
-        contents: |
-          # CloudStream-3XXX r${{ env.COMMIT_COUNT }}
-          ${{ steps.unreleasedbody.outputs.content }}
-          
-          ${{ steps.currentBody.outputs.content }}
-        write-mode: overwrite
-      
-    - name: Clear unreleased doc
-      uses: DamianReeves/write-file-action@v1.0
-      with:
-        path: doc/unreleased.md
-        contents: +
-        write-mode: overwrite
-    
-    - name: Overwrite last tag
-      uses: DamianReeves/write-file-action@v1.0
-      with:
-        path: doc/last_tag.txt
-        contents: jav_r${{ env.COMMIT_COUNT }}
-        write-mode: overwrite
-  
-    - name: Commit to the repo
-      run: |
-        git config user.name "GitHub Actions"
-        git config user.email "actions@github.com"
-        git add .
-        # "echo" returns true so the build succeeds, even if no changed files
-        git commit -m '[skip ci] bump version and update version history' || echo
-        git push
-        
-    - name: Create Release
-      uses: softprops/action-gh-release@v1
-      with:
-        tag_name: "jav_r${{ env.COMMIT_COUNT }}"
-        prerelease: false
-        name: "CloudStream-3XXX r${{ env.COMMIT_COUNT }}"
-        files: |
-          app/build/outputs/apk/release/*.apk
-        body: |
-          ${{ steps.unreleasedbody.outputs.content }}
+      - name: Gradle assemble (test)
+        run: ./gradlew tasks
