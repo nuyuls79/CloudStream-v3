@@ -1,6 +1,9 @@
 name: Build App
 
 on:
+   push:
+    branches:
+      - javdev
   workflow_dispatch:
 
 concurrency: 
