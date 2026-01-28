@@ -146,10 +146,10 @@
                     </LinearLayout>
                 </LinearLayout>
 
-                <!-- CAST = PEMERAN (AMAN) -->
+                <!-- CAST = PEMERAN (FIXED, TIDAK ERROR) -->
                 <TextView
                     android:id="@+id/result_cast_text"
-                    android:text="@string/cast"
+                    android:text="@string/cast_format"
                     android:textColor="?attr/grayTextColor"/>
 
                 <androidx.recyclerview.widget.RecyclerView
