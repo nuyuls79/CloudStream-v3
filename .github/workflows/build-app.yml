@@ -22,4 +22,5 @@ jobs:
         run: chmod +x gradlew
 
       - name: Gradle assemble (test)
+        path: app/build/outputs/apk/**/app-*.apk
         run: ./gradlew tasks
