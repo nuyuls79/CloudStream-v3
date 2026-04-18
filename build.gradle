@@ -1,7 +1,7 @@
 // Top-level build file where you can add configuration options common to all sub-projects/modules.
 
 buildscript {
-    ext.kotlin_version = '1.9.22' // Upgrade ke versi stabil terbaru (1.9.22) untuk kompatibilitas dengan JDK 11 dan perbaikan kapt
+    ext.kotlin_version = '1.8.22' // Upgrade ke versi stabil terbaru (1.9.22) untuk kompatibilitas dengan JDK 11 dan perbaikan kapt
     repositories {
         google()
         mavenCentral()
