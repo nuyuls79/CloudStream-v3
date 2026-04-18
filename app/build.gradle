@@ -116,7 +116,8 @@ dependencies {
     implementation "com.fasterxml.jackson.module:jackson-module-kotlin:2.13.1"
     implementation "com.fasterxml.jackson.core:jackson-databind:2.13.1"
 
-    implementation "com.github.TeamNewPipe:NewPipeExtractor:master-SNAPSHOT"
+    // FIXED dependency (master-SNAPSHOT removed)
+    implementation "com.github.TeamNewPipe:NewPipeExtractor:7f6c0f5"
 
     implementation 'com.google.android.gms:play-services-cast-framework:21.3.0'
 
