@@ -1,6 +1,7 @@
 name: Build APK Release
 
-on: workflow_dispatch
+on:
+  workflow_dispatch:
 
 jobs:
   build:
@@ -14,15 +15,18 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '17'
+          java-version: "17"
           cache: gradle
 
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Configure Gradle memory
+      - name: Configure Gradle for CI
         run: |
-          echo "org.gradle.jvmargs=-Xmx4g -Dfile.encoding=UTF-8" >> gradle.properties
+          echo "org.gradle.jvmargs=-Xmx4096m -XX:MaxMetaspaceSize=1024m -Dfile.encoding=UTF-8" >> gradle.properties
+          echo "org.gradle.daemon=false" >> gradle.properties
+          echo "org.gradle.parallel=true" >> gradle.properties
+          echo "kotlin.incremental=false" >> gradle.properties
 
       - name: Fix Android string format errors
         run: |
@@ -38,6 +42,7 @@ jobs:
         run: |
           rm -rf ~/.gradle/caches/transforms-*
           rm -rf ~/.gradle/caches/modules-*
+          rm -rf ~/.gradle/caches/jars-*
 
       - name: Create debug keystore
         run: |
@@ -54,6 +59,9 @@ jobs:
 
       - name: Grant execute permission
         run: chmod +x gradlew
+
+      - name: Clean project
+        run: ./gradlew clean --no-daemon
 
       - name: Build Release APK
         run: ./gradlew assembleRelease --no-daemon --stacktrace --info
