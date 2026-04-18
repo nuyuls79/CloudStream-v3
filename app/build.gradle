@@ -1,7 +1,6 @@
 apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 apply plugin: 'kotlin-kapt'
-// Plugin 'kotlin-android-extensions' sudah usang, diganti dengan kotlin-parcelize
 apply plugin: 'kotlin-parcelize'
 
 def tmpFilePath = System.getProperty("user.home") + "/work/_temp/keystore/"
@@ -21,7 +20,6 @@ android {
 
     signingConfigs {
         debug {
-            // Uses default debug keystore
         }
         release {
             if (prereleaseStoreFile != null) {
@@ -30,7 +28,6 @@ android {
                 keyAlias System.getenv("SIGNING_KEY_ALIAS")
                 keyPassword System.getenv("SIGNING_KEY_PASSWORD")
             } else {
-                // Fallback to debug keystore (created by CI)
                 storeFile file(System.getProperty("user.home") + "/.android/debug.keystore")
                 storePassword "android"
                 keyAlias "androiddebugkey"
@@ -60,21 +57,35 @@ android {
     }
 
     buildTypes {
+
         release {
+            signingConfig signingConfigs.release
+
+            // MATIKAN R8 DAN SHRINKER
             minifyEnabled false
             shrinkResources false
-            signingConfig signingConfigs.release
+
+            // Hindari R8 processing
+            debuggable false
         }
+
         prerelease {
             applicationIdSuffix ".prerelease"
             versionNameSuffix "-PRE"
             buildConfigField "boolean", "BETA", "true"
             signingConfig signingConfigs.debug
+
+            minifyEnabled false
+            shrinkResources false
         }
+
         debug {
             applicationIdSuffix ".debug"
             versionNameSuffix "-DEBUG"
             signingConfig signingConfigs.debug
+
+            minifyEnabled false
+            shrinkResources false
         }
     }
 
@@ -85,10 +96,8 @@ android {
     }
 
     kotlinOptions {
-        jvmTarget = '11'
+        jvmTarget = "11"
     }
-
-    // dexOptions sudah tidak digunakan lagi, hapus saja.
 }
 
 kapt {
@@ -100,20 +109,17 @@ repositories {
 }
 
 dependencies {
+
     implementation 'androidx.core:core-ktx:1.9.0'
     implementation 'androidx.appcompat:appcompat:1.5.1'
     implementation 'com.google.android.material:material:1.7.0'
     implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
     implementation 'androidx.preference:preference-ktx:1.2.0'
 
-    // --- Tambahan dependensi untuk mengatasi error kapt ---
-    // ACRA untuk crash reporting (diperlukan oleh AcraApplication)
     implementation 'ch.acra:acra-core:5.9.3'
 
-    // Google Cast Framework (diperlukan oleh CastOptionsProvider, MiniControllerFragment, dll)
     implementation 'com.google.android.gms:play-services-cast-framework:21.3.0'
 
-    // --- Dependensi lain tetap ---
     implementation 'org.conscrypt:conscrypt-android:2.5.2'
     implementation 'com.squareup.okhttp3:okhttp:3.12.13'
     implementation 'com.squareup.okhttp3:logging-interceptor:3.12.13'
