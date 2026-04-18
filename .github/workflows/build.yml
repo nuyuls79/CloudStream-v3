@@ -17,6 +17,20 @@ jobs:
           distribution: 'temurin'
           java-version: '11'
 
+      # 🔑 Buat debug keystore sementara
+      - name: Create debug keystore
+        run: |
+          mkdir -p ~/.android
+          keytool -genkey -v \
+            -keystore ~/.android/debug.keystore \
+            -storepass android \
+            -alias androiddebugkey \
+            -keypass android \
+            -keyalg RSA \
+            -keysize 2048 \
+            -validity 10000 \
+            -dname "CN=Android Debug, O=Android, C=US"
+
       - name: Cache Gradle dependencies
         uses: actions/cache@v4
         with:
@@ -30,20 +44,11 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
-      - name: Build Release APK with detailed logging
-        run: ./gradlew app:assembleRelease --stacktrace --info --no-daemon
+      - name: Build Release APK
+        run: ./gradlew app:assembleRelease --stacktrace --no-daemon
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
           name: app-release
           path: app/build/outputs/apk/release/*.apk
-
-      - name: Upload build logs if failed (for debugging)
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: build-logs
-          path: |
-            ~/.gradle/daemon/*/daemon-*.out.log
-            app/build/reports/**/*
