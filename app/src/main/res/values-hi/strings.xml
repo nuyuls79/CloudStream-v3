@@ -2,7 +2,7 @@
 <resources>
     <!-- TRANSLATE, BUT DON'T FORGET FORMAT -->
     <string name="player_speed_text_format" formatted="true">रफ्तार (%.2fx)</string>
-    <string name="new_update_format" formatted="true">नया अपडेट आया है!\n%s -> %s</string>
+    <string name="new_update_format" formatted="true">नया अपडेट आया है!\n%1$s -> %2$s</string>
 
     <string name="title_home">होम</string>
     <string name="title_search">खोजें</string>
