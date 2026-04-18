@@ -1,0 +1,68 @@
+version: 2.1
+
+jobs:
+  build:
+    docker:
+      - image: cimg/android:2024.01
+
+    resource_class: large
+    working_directory: ~/project
+
+    steps:
+      - checkout
+
+      - run:
+          name: Give permission to gradlew
+          command: chmod +x gradlew
+
+      - run:
+          name: Configure Gradle memory
+          command: |
+            echo "org.gradle.jvmargs=-Xmx6g -XX:MaxMetaspaceSize=2g -Dfile.encoding=UTF-8" >> gradle.properties
+            echo "org.gradle.daemon=false" >> gradle.properties
+            echo "org.gradle.parallel=true" >> gradle.properties
+            echo "kotlin.incremental=false" >> gradle.properties
+
+      - run:
+          name: Fix Android string format errors
+          command: |
+            find app/src/main/res -name "*.xml" -type f -print0 | while IFS= read -r -d '' file; do
+              sed -i 's/%s %s/%1$s %2$s/g' "$file"
+              sed -i 's/%s -> %s/%1$s -> %2$s/g' "$file"
+              sed -i 's/%s Ep %d/%1$s Ep %2$d/g' "$file"
+              sed -i 's/%dh %dm/%1$dh %2$dm/g' "$file"
+              sed -i 's/%dd %dh %dm/%1$dd %2$dh %3$dm/g' "$file"
+            done
+
+      - run:
+          name: Clean Gradle cache
+          command: |
+            rm -rf ~/.gradle/caches
+            rm -rf ~/.gradle/wrapper
+            rm -rf ~/.gradle/daemon
+
+      - run:
+          name: Create debug keystore
+          command: |
+            mkdir -p ~/.android
+            keytool -genkey -v \
+              -keystore ~/.android/debug.keystore \
+              -storepass android \
+              -alias androiddebugkey \
+              -keypass android \
+              -keyalg RSA \
+              -keysize 2048 \
+              -validity 10000 \
+              -dname "CN=Android Debug, O=Android, C=US"
+
+      - run:
+          name: Clean project
+          command: ./gradlew clean --no-daemon
+
+      - run:
+          name: Build Release APK
+          command: ./gradlew assembleRelease --no-daemon --stacktrace --info
+
+      - store_artifacts:
+          path: app/build/outputs/apk/release
+          destination: apk
