@@ -20,6 +20,10 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
+      - name: Configure Gradle memory
+        run: |
+          echo "org.gradle.jvmargs=-Xmx4g -Dfile.encoding=UTF-8" >> gradle.properties
+
       - name: Fix Android string format errors
         run: |
           find app/src/main/res -name "*.xml" -type f -print0 | while IFS= read -r -d '' file; do
@@ -29,6 +33,11 @@ jobs:
             sed -i 's/%dh %dm/%1$dh %2$dm/g' "$file"
             sed -i 's/%dd %dh %dm/%1$dd %2$dh %3$dm/g' "$file"
           done
+
+      - name: Clear Gradle cache
+        run: |
+          rm -rf ~/.gradle/caches/transforms-*
+          rm -rf ~/.gradle/caches/modules-*
 
       - name: Create debug keystore
         run: |
@@ -43,19 +52,19 @@ jobs:
             -validity 10000 \
             -dname "CN=Android Debug, O=Android, C=US"
 
-      - name: Grant execute permission for gradlew
+      - name: Grant execute permission
         run: chmod +x gradlew
 
       - name: Build Release APK
-        run: ./gradlew assembleRelease --stacktrace --no-daemon
+        run: ./gradlew assembleRelease --no-daemon --stacktrace --info
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
           name: CloudStream-APK
-          path: app/build/outputs/apk/**/*.apk
+          path: app/build/outputs/apk/release/*.apk
 
-      - name: Upload build logs (if failed)
+      - name: Upload build logs
         if: failure()
         uses: actions/upload-artifact@v4
         with:
