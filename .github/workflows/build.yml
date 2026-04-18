@@ -21,26 +21,63 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Increase Gradle memory
+      - name: Configure Gradle memory
         run: |
           echo "org.gradle.jvmargs=-Xmx6g -XX:MaxMetaspaceSize=2g -Dfile.encoding=UTF-8" >> gradle.properties
+          echo "org.gradle.daemon=false" >> gradle.properties
+          echo "org.gradle.parallel=true" >> gradle.properties
+          echo "kotlin.incremental=false" >> gradle.properties
+
+      - name: Fix Android string format errors
+        run: |
+          find app/src/main/res -name "*.xml" -type f -print0 | while IFS= read -r -d '' file; do
+            sed -i 's/%s %s/%1$s %2$s/g' "$file"
+            sed -i 's/%s -> %s/%1$s -> %2$s/g' "$file"
+            sed -i 's/%s Ep %d/%1$s Ep %2$d/g' "$file"
+            sed -i 's/%dh %dm/%1$dh %2$dm/g' "$file"
+            sed -i 's/%dd %dh %dm/%1$dd %2$dh %3$dm/g' "$file"
+          done
 
       - name: Clear Gradle cache
         run: |
           rm -rf ~/.gradle/caches
           rm -rf ~/.gradle/wrapper
+          rm -rf ~/.gradle/daemon
 
-      - name: Grant permission
+      - name: Create debug keystore
+        run: |
+          mkdir -p ~/.android
+          keytool -genkey -v \
+            -keystore ~/.android/debug.keystore \
+            -storepass android \
+            -alias androiddebugkey \
+            -keypass android \
+            -keyalg RSA \
+            -keysize 2048 \
+            -validity 10000 \
+            -dname "CN=Android Debug, O=Android, C=US"
+
+      - name: Grant execute permission
         run: chmod +x gradlew
 
       - name: Clean project
-        run: ./gradlew clean
+        run: ./gradlew clean --no-daemon
 
       - name: Build Release APK
-        run: ./gradlew assembleRelease --stacktrace --no-daemon
+        run: ./gradlew assembleRelease --no-daemon --stacktrace --info
 
-      - name: Upload APK
+      - name: Upload APK artifact
+        if: success()
         uses: actions/upload-artifact@v4
         with:
           name: CloudStream-APK
           path: app/build/outputs/apk/release/*.apk
+
+      - name: Upload build logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-logs
+          path: |
+            ~/.gradle/daemon/*/daemon-*.out.log
+            app/build/reports/**/*
