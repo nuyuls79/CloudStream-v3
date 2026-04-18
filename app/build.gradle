@@ -18,23 +18,25 @@ android {
         unitTests.returnDefaultValues = true
     }
 
-    
     signingConfigs {
-    release {
-        if (prereleaseStoreFile != null) {
-            storeFile file(prereleaseStoreFile)
-            storePassword System.getenv("SIGNING_STORE_PASSWORD")
-            keyAlias System.getenv("SIGNING_KEY_ALIAS")
-            keyPassword System.getenv("SIGNING_KEY_PASSWORD")
-        } else {
-            // Fallback ke debug keystore
-            storeFile file(System.getProperty("user.home") + "/.android/debug.keystore")
-            storePassword "android"
-            keyAlias "androiddebugkey"
-            keyPassword "android"
+        debug {
+            // Uses default debug keystore
+        }
+        release {
+            if (prereleaseStoreFile != null) {
+                storeFile file(prereleaseStoreFile)
+                storePassword System.getenv("SIGNING_STORE_PASSWORD")
+                keyAlias System.getenv("SIGNING_KEY_ALIAS")
+                keyPassword System.getenv("SIGNING_KEY_PASSWORD")
+            } else {
+                // Fallback to debug keystore (created by CI)
+                storeFile file(System.getProperty("user.home") + "/.android/debug.keystore")
+                storePassword "android"
+                keyAlias "androiddebugkey"
+                keyPassword "android"
+            }
         }
     }
-
 
     defaultConfig {
         applicationId "foss.jacekun.cloudstream3xxx"
@@ -85,7 +87,6 @@ android {
         jvmTarget = '11'
     }
 
-    // Tambahkan untuk menonaktifkan optimasi R8 yang bermasalah
     dexOptions {
         javaMaxHeapSize "4g"
         preDexLibraries = false
