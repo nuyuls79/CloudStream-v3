@@ -1,8 +1,7 @@
-// Top-level build file where you can add configuration options common to all sub-projects/modules.
+// Top-level build file
 
 buildscript {
 
-    // Kotlin version compatible with AGP 7.4.2
     ext.kotlin_version = '1.8.22'
 
     repositories {
@@ -12,14 +11,9 @@ buildscript {
 
     dependencies {
 
-        // Android Gradle Plugin
         classpath 'com.android.tools.build:gradle:7.4.2'
-
-        // Kotlin Gradle Plugin
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
 
-        // NOTE:
-        // Application dependencies belong in module build.gradle files
     }
 }
 
@@ -28,8 +22,6 @@ allprojects {
     repositories {
         google()
         mavenCentral()
-
-        // Needed for GitHub libraries like NewPipeExtractor
         maven { url "https://jitpack.io" }
     }
 }
