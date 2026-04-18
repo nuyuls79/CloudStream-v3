@@ -24,6 +24,8 @@ android {
         versionCode 1607
         versionName "3.0.1"
 
+        vectorDrawables.useSupportLibrary = true
+
         resValue "string", "app_version", versionName
 
         buildConfigField(
@@ -116,41 +118,48 @@ dependencies {
     implementation 'androidx.multidex:multidex:2.0.1'
     implementation "androidx.tvprovider:tvprovider:1.0.0"
 
+    // ACRA
     implementation 'ch.acra:acra-core:5.9.3'
     implementation 'ch.acra:acra-http:5.9.3'
 
+    // JSON
     implementation "com.fasterxml.jackson.module:jackson-module-kotlin:2.13.1"
     implementation "com.fasterxml.jackson.core:jackson-databind:2.13.1"
 
-    // HTML parser
+    // HTML parsing
     implementation 'org.jsoup:jsoup:1.15.3'
 
-    // HTTP libraries
+    // HTTP
     implementation 'com.squareup.okhttp3:okhttp:3.12.13'
     implementation 'com.squareup.okhttp3:logging-interceptor:3.12.13'
+    implementation 'com.squareup.okhttp3:okhttp-doh:3.12.13'
 
-    // NiceHttp (used by CloudStream)
+    // NiceHttp (CloudStream internal)
     implementation 'com.github.lagradost:NiceHttp:0.4.0'
 
     // khttp
     implementation 'khttp:khttp:1.0.0'
 
-    // NewPipe extractor (stable)
+    // NewPipe extractor (compatible tag on JitPack)
     implementation 'com.github.TeamNewPipe:NewPipeExtractor:v0.23.0'
 
+    // Cast + SSL
     implementation 'com.google.android.gms:play-services-cast-framework:21.3.0'
     implementation 'org.conscrypt:conscrypt-android:2.5.2'
 
+    // Player
     implementation 'com.google.android.exoplayer:exoplayer:2.18.1'
     implementation 'com.google.android.exoplayer:extension-okhttp:2.18.1'
     implementation 'com.google.android.exoplayer:extension-mediasession:2.18.1'
 
+    // Images
     implementation 'com.github.bumptech.glide:glide:4.14.2'
     kapt 'com.github.bumptech.glide:compiler:4.14.2'
 
     implementation 'jp.wasabeef:glide-transformations:4.3.0'
     implementation 'com.facebook.shimmer:shimmer:0.5.0'
 
+    // Utils
     implementation 'org.mozilla:rhino:1.7.14'
     implementation 'com.jaredrummler:colorpicker:1.1.0'
     implementation 'com.github.albfernandez:juniversalchardet:2.4.0'
@@ -158,9 +167,11 @@ dependencies {
     implementation "com.github.tachiyomiorg:unifile:17bec43"
     implementation "com.uwetrottmann.tmdb2:tmdb-java:2.6.0"
 
+    // Work
     implementation "androidx.work:work-runtime:2.7.1"
     implementation "androidx.work:work-runtime-ktx:2.7.1"
 
+    // Navigation
     implementation "androidx.navigation:navigation-fragment:2.5.3"
     implementation "androidx.navigation:navigation-ui:2.5.3"
 
