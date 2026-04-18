@@ -11,6 +11,7 @@ if (allFilesFromDir != null && allFilesFromDir.length > 0) {
 }
 
 android {
+
     compileSdkVersion 33
 
     defaultConfig {
@@ -38,8 +39,8 @@ android {
     }
 
     signingConfigs {
-        debug {
-        }
+        debug { }
+
         release {
             if (prereleaseStoreFile != null) {
                 storeFile file(prereleaseStoreFile)
@@ -59,11 +60,8 @@ android {
 
         release {
             signingConfig signingConfigs.release
-
-            // Disable code shrinking
             minifyEnabled false
             shrinkResources false
-
             debuggable false
         }
 
@@ -72,7 +70,6 @@ android {
             versionNameSuffix "-PRE"
             buildConfigField "boolean", "BETA", "true"
             signingConfig signingConfigs.debug
-
             minifyEnabled false
             shrinkResources false
         }
@@ -81,7 +78,6 @@ android {
             applicationIdSuffix ".debug"
             versionNameSuffix "-DEBUG"
             signingConfig signingConfigs.debug
-
             minifyEnabled false
             shrinkResources false
         }
@@ -102,10 +98,6 @@ kapt {
     correctErrorTypes true
 }
 
-repositories {
-    maven { url 'https://jitpack.io' }
-}
-
 dependencies {
 
     implementation 'androidx.core:core-ktx:1.9.0'
@@ -114,11 +106,22 @@ dependencies {
     implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
     implementation 'androidx.preference:preference-ktx:1.2.0'
 
+    implementation 'androidx.multidex:multidex:2.0.1'
+
+    implementation "androidx.tvprovider:tvprovider:1.0.0"
+
     implementation 'ch.acra:acra-core:5.9.3'
+    implementation 'ch.acra:acra-http:5.9.3'
+
+    implementation "com.fasterxml.jackson.module:jackson-module-kotlin:2.13.1"
+    implementation "com.fasterxml.jackson.core:jackson-databind:2.13.1"
+
+    implementation "com.github.TeamNewPipe:NewPipeExtractor:master-SNAPSHOT"
 
     implementation 'com.google.android.gms:play-services-cast-framework:21.3.0'
 
     implementation 'org.conscrypt:conscrypt-android:2.5.2'
+
     implementation 'com.squareup.okhttp3:okhttp:3.12.13'
     implementation 'com.squareup.okhttp3:logging-interceptor:3.12.13'
 
@@ -135,6 +138,7 @@ dependencies {
     implementation 'org.mozilla:rhino:1.7.14'
     implementation 'com.jaredrummler:colorpicker:1.1.0'
     implementation 'com.github.albfernandez:juniversalchardet:2.4.0'
+
     implementation "com.github.tachiyomiorg:unifile:17bec43"
     implementation "com.uwetrottmann.tmdb2:tmdb-java:2.6.0"
 
