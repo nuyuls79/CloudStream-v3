@@ -43,14 +43,12 @@ android {
         debug {}
 
         release {
-
             if (prereleaseStoreFile != null) {
                 storeFile file(prereleaseStoreFile)
                 storePassword System.getenv("SIGNING_STORE_PASSWORD")
                 keyAlias System.getenv("SIGNING_KEY_ALIAS")
                 keyPassword System.getenv("SIGNING_KEY_PASSWORD")
             } else {
-
                 storeFile file(System.getProperty("user.home") + "/.android/debug.keystore")
                 storePassword "android"
                 keyAlias "androiddebugkey"
@@ -62,44 +60,32 @@ android {
     buildTypes {
 
         release {
-
             signingConfig signingConfigs.release
-
             minifyEnabled false
             shrinkResources false
-
             debuggable false
         }
 
         prerelease {
-
             applicationIdSuffix ".prerelease"
             versionNameSuffix "-PRE"
-
             buildConfigField "boolean", "BETA", "true"
-
             signingConfig signingConfigs.debug
-
             minifyEnabled false
             shrinkResources false
         }
 
         debug {
-
             applicationIdSuffix ".debug"
             versionNameSuffix "-DEBUG"
-
             signingConfig signingConfigs.debug
-
             minifyEnabled false
             shrinkResources false
         }
     }
 
     compileOptions {
-
         coreLibraryDesugaringEnabled true
-
         sourceCompatibility JavaVersion.VERSION_11
         targetCompatibility JavaVersion.VERSION_11
     }
@@ -111,6 +97,10 @@ android {
 
 kapt {
     correctErrorTypes true
+}
+
+repositories {
+    maven { url "https://jitpack.io" }
 }
 
 dependencies {
@@ -131,7 +121,8 @@ dependencies {
     implementation "com.fasterxml.jackson.module:jackson-module-kotlin:2.13.1"
     implementation "com.fasterxml.jackson.core:jackson-databind:2.13.1"
 
-    implementation "com.github.TeamNewPipe:NewPipeExtractor:v0.23.3"
+    // FIXED VERSION
+    implementation "com.github.TeamNewPipe:NewPipeExtractor:0.23.1"
 
     implementation 'com.google.android.gms:play-services-cast-framework:21.3.0'
 
