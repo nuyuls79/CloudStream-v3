@@ -121,7 +121,7 @@ dependencies {
     implementation "com.fasterxml.jackson.module:jackson-module-kotlin:2.13.1"
     implementation "com.fasterxml.jackson.core:jackson-databind:2.13.1"
 
-    implementation "com.github.TeamNewPipe.NewPipeExtractor:NewPipeExtractor:0.24.0"
+    implementation "com.github.TeamNewPipe:NewPipeExtractor:v0.24.0"
 
     implementation 'com.google.android.gms:play-services-cast-framework:21.3.0'
     implementation 'org.conscrypt:conscrypt-android:2.5.2'
