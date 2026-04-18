@@ -2,11 +2,10 @@ package com.lagradost.cloudstream3
 
 import android.app.Application
 import org.acra.ACRA
-import org.acra.annotation.AcraCore
+import org.acra.config.CoreConfigurationBuilder
 import org.conscrypt.Conscrypt
 import java.security.Security
 
-@AcraCore(buildConfigClass = BuildConfig::class)
 class AcraApplication : Application() {
 
     override fun onCreate() {
@@ -19,7 +18,8 @@ class AcraApplication : Application() {
             e.printStackTrace()
         }
 
-        // Init ACRA
-        ACRA.init(this)
+        // Init ACRA tanpa annotation
+        val config = CoreConfigurationBuilder(this).build()
+        ACRA.init(this, config)
     }
 }
