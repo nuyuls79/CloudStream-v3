@@ -11,8 +11,8 @@ if (allFilesFromDir != null && allFilesFromDir.length > 0) {
 }
 
 android {
-    compileSdkVersion 31
-    buildToolsVersion "30.0.3"
+    compileSdkVersion 33
+    buildToolsVersion "33.0.2"
 
     testOptions {
         unitTests.returnDefaultValues = true
@@ -20,12 +20,7 @@ android {
 
     signingConfigs {
         debug {
-            if (prereleaseStoreFile != null) {
-                storeFile file(prereleaseStoreFile)
-                storePassword System.getenv("SIGNING_STORE_PASSWORD")
-                keyAlias System.getenv("SIGNING_KEY_ALIAS")
-                keyPassword System.getenv("SIGNING_KEY_PASSWORD")
-            }
+            // Gunakan debug keystore default
         }
         release {
             if (prereleaseStoreFile != null) {
@@ -33,6 +28,12 @@ android {
                 storePassword System.getenv("SIGNING_STORE_PASSWORD")
                 keyAlias System.getenv("SIGNING_KEY_ALIAS")
                 keyPassword System.getenv("SIGNING_KEY_PASSWORD")
+            } else {
+                // Fallback ke debug signing
+                storeFile file(System.getProperty("user.home") + "/.android/debug.keystore")
+                storePassword "android"
+                keyAlias "androiddebugkey"
+                keyPassword "android"
             }
         }
     }
@@ -78,18 +79,23 @@ android {
 
     compileOptions {
         coreLibraryDesugaringEnabled true
-        sourceCompatibility JavaVersion.VERSION_1_8
-        targetCompatibility JavaVersion.VERSION_1_8
+        sourceCompatibility JavaVersion.VERSION_11
+        targetCompatibility JavaVersion.VERSION_11
     }
 
     kotlinOptions {
-        jvmTarget = '1.8'
+        jvmTarget = '11'
+    }
+
+    // Tambahkan untuk menonaktifkan optimasi R8 yang bermasalah
+    dexOptions {
+        javaMaxHeapSize "4g"
+        preDexLibraries = false
     }
 }
 
-/* HARUS DI LUAR android {} */
 kapt {
-    includeCompileClasspath = true
+    correctErrorTypes true
 }
 
 repositories {
@@ -97,9 +103,9 @@ repositories {
 }
 
 dependencies {
-    implementation 'androidx.core:core-ktx:1.8.0'
-    implementation 'androidx.appcompat:appcompat:1.4.2'
-    implementation 'com.google.android.material:material:1.5.0'
+    implementation 'androidx.core:core-ktx:1.9.0'
+    implementation 'androidx.appcompat:appcompat:1.5.1'
+    implementation 'com.google.android.material:material:1.7.0'
     implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
     implementation 'androidx.preference:preference-ktx:1.2.0'
 
@@ -107,12 +113,12 @@ dependencies {
     implementation 'com.squareup.okhttp3:okhttp:3.12.13'
     implementation 'com.squareup.okhttp3:logging-interceptor:3.12.13'
 
-    implementation 'com.google.android.exoplayer:exoplayer:2.16.1'
-    implementation 'com.google.android.exoplayer:extension-okhttp:2.16.1'
-    implementation 'com.google.android.exoplayer:extension-mediasession:2.16.1'
+    implementation 'com.google.android.exoplayer:exoplayer:2.18.1'
+    implementation 'com.google.android.exoplayer:extension-okhttp:2.18.1'
+    implementation 'com.google.android.exoplayer:extension-mediasession:2.18.1'
 
-    implementation 'com.github.bumptech.glide:glide:4.13.1'
-    kapt 'com.github.bumptech.glide:compiler:4.13.1'
+    implementation 'com.github.bumptech.glide:glide:4.14.2'
+    kapt 'com.github.bumptech.glide:compiler:4.14.2'
 
     implementation 'jp.wasabeef:glide-transformations:4.3.0'
     implementation 'com.facebook.shimmer:shimmer:0.5.0'
@@ -126,8 +132,8 @@ dependencies {
     implementation "androidx.work:work-runtime:2.7.1"
     implementation "androidx.work:work-runtime-ktx:2.7.1"
 
-    implementation "androidx.navigation:navigation-fragment:2.3.5"
-    implementation "androidx.navigation:navigation-ui:2.3.5"
-  
-    coreLibraryDesugaring "com.android.tools:desugar_jdk_libs:1.1.5"
+    implementation "androidx.navigation:navigation-fragment:2.5.3"
+    implementation "androidx.navigation:navigation-ui:2.5.3"
+
+    coreLibraryDesugaring "com.android.tools:desugar_jdk_libs:1.2.2"
 }
