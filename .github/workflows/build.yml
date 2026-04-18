@@ -63,20 +63,21 @@ jobs:
       - name: Clean project
         run: ./gradlew clean --no-daemon
 
-      - name: Build Release APK
-        run: ./gradlew assembleRelease --no-daemon --stacktrace --info
+      - name: Build Release APK (save full log)
+        run: |
+          set -o pipefail
+          ./gradlew assembleRelease --no-daemon --stacktrace --info | tee build.log
 
       - name: Upload APK artifact
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: CloudStream-APK
           path: app/build/outputs/apk/release/*.apk
 
-      - name: Upload build logs
-        if: failure()
+      - name: Upload build log file
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: build-logs
-          path: |
-            ~/.gradle/daemon/*/daemon-*.out.log
-            app/build/reports/**/*
+          name: build-log
+          path: build.log
