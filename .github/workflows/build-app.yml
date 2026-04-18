@@ -1,4 +1,4 @@
-name: Build APK Release
+name: Build APK Release Test
 
 on:
   workflow_dispatch:
