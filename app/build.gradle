@@ -2,6 +2,7 @@ apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 apply plugin: 'kotlin-kapt'
 apply plugin: 'kotlin-parcelize'
+apply plugin: 'kotlin-android-extensions'
 
 def tmpFilePath = System.getProperty("user.home") + "/work/_temp/keystore/"
 def allFilesFromDir = new File(tmpFilePath).listFiles()
@@ -63,7 +64,6 @@ android {
             signingConfig signingConfigs.release
             minifyEnabled false
             shrinkResources false
-            debuggable false
         }
 
         prerelease {
@@ -100,6 +100,8 @@ kapt {
 }
 
 repositories {
+    google()
+    mavenCentral()
     maven { url "https://jitpack.io" }
 }
 
@@ -117,17 +119,27 @@ dependencies {
     implementation 'ch.acra:acra-core:5.9.3'
     implementation 'ch.acra:acra-http:5.9.3'
 
-
     implementation "com.fasterxml.jackson.module:jackson-module-kotlin:2.13.1"
     implementation "com.fasterxml.jackson.core:jackson-databind:2.13.1"
 
-    implementation "com.github.TeamNewPipe:NewPipeExtractor:v0.24.0"
+    // HTML parser
+    implementation 'org.jsoup:jsoup:1.15.3'
+
+    // HTTP libraries
+    implementation 'com.squareup.okhttp3:okhttp:3.12.13'
+    implementation 'com.squareup.okhttp3:logging-interceptor:3.12.13'
+
+    // NiceHttp (used by CloudStream)
+    implementation 'com.github.lagradost:NiceHttp:0.4.0'
+
+    // khttp
+    implementation 'khttp:khttp:1.0.0'
+
+    // NewPipe extractor (stable)
+    implementation 'com.github.TeamNewPipe:NewPipeExtractor:v0.23.0'
 
     implementation 'com.google.android.gms:play-services-cast-framework:21.3.0'
     implementation 'org.conscrypt:conscrypt-android:2.5.2'
-
-    implementation 'com.squareup.okhttp3:okhttp:3.12.13'
-    implementation 'com.squareup.okhttp3:logging-interceptor:3.12.13'
 
     implementation 'com.google.android.exoplayer:exoplayer:2.18.1'
     implementation 'com.google.android.exoplayer:extension-okhttp:2.18.1'
