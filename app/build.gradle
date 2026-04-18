@@ -116,7 +116,7 @@ dependencies {
 
     implementation 'ch.acra:acra-core:5.9.3'
     implementation 'ch.acra:acra-http:5.9.3'
-    kapt 'ch.acra:acra-core:5.9.3'
+    kapt 'ch.acra:acra-annotations:5.9.3'
 
     implementation "com.fasterxml.jackson.module:jackson-module-kotlin:2.13.1"
     implementation "com.fasterxml.jackson.core:jackson-databind:2.13.1"
