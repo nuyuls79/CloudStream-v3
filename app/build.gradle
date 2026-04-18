@@ -12,7 +12,26 @@ if (allFilesFromDir != null && allFilesFromDir.length > 0) {
 
 android {
     compileSdkVersion 33
-    buildToolsVersion "33.0.2"
+
+    defaultConfig {
+        applicationId "foss.jacekun.cloudstream3xxx"
+        minSdkVersion 21
+        targetSdkVersion 28
+        multiDexEnabled true
+
+        versionCode 1607
+        versionName "3.0.1"
+
+        resValue "string", "app_version", versionName
+
+        buildConfigField(
+                "String",
+                "BUILDDATE",
+                "\"${new Date().format("yyyy-MM-dd HH:mm")}\""
+        )
+
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+    }
 
     testOptions {
         unitTests.returnDefaultValues = true
@@ -36,36 +55,15 @@ android {
         }
     }
 
-    defaultConfig {
-        applicationId "foss.jacekun.cloudstream3xxx"
-        minSdkVersion 21
-        targetSdkVersion 28
-        multiDexEnabled true
-
-        versionCode 1607
-        versionName "3.0.1"
-
-        resValue "string", "app_version", versionName
-
-        buildConfigField(
-                "String",
-                "BUILDDATE",
-                "\"${new Date().format("yyyy-MM-dd HH:mm")}\""
-        )
-
-        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
-    }
-
     buildTypes {
 
         release {
             signingConfig signingConfigs.release
 
-            // MATIKAN R8 DAN SHRINKER
+            // Disable code shrinking
             minifyEnabled false
             shrinkResources false
 
-            // Hindari R8 processing
             debuggable false
         }
 
