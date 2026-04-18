@@ -1,7 +1,8 @@
 apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 apply plugin: 'kotlin-kapt'
-apply plugin: 'kotlin-android-extensions'
+// Plugin 'kotlin-android-extensions' sudah usang, diganti dengan kotlin-parcelize
+apply plugin: 'kotlin-parcelize'
 
 def tmpFilePath = System.getProperty("user.home") + "/work/_temp/keystore/"
 def allFilesFromDir = new File(tmpFilePath).listFiles()
@@ -87,10 +88,7 @@ android {
         jvmTarget = '11'
     }
 
-    dexOptions {
-        javaMaxHeapSize "4g"
-        preDexLibraries = false
-    }
+    // dexOptions sudah tidak digunakan lagi, hapus saja.
 }
 
 kapt {
@@ -108,6 +106,14 @@ dependencies {
     implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
     implementation 'androidx.preference:preference-ktx:1.2.0'
 
+    // --- Tambahan dependensi untuk mengatasi error kapt ---
+    // ACRA untuk crash reporting (diperlukan oleh AcraApplication)
+    implementation 'ch.acra:acra-core:5.9.3'
+
+    // Google Cast Framework (diperlukan oleh CastOptionsProvider, MiniControllerFragment, dll)
+    implementation 'com.google.android.gms:play-services-cast-framework:21.3.0'
+
+    // --- Dependensi lain tetap ---
     implementation 'org.conscrypt:conscrypt-android:2.5.2'
     implementation 'com.squareup.okhttp3:okhttp:3.12.13'
     implementation 'com.squareup.okhttp3:logging-interceptor:3.12.13'
