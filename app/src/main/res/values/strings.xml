@@ -64,7 +64,7 @@
     <string name="storage_size_format" formatted="true" translatable="false">%s • %sGB</string>
     <string name="download_size_format" formatted="true" translatable="false">%sMB / %sMB</string>
     <string name="mb_format" formatted="true" translatable="false">%dMB</string>
-    <string name="episode_name_format" formatted="true" translatable="false">%s %s</string>
+    <string name="episode_name_format" formatted="true" translatable="false">%1$s %2$s</string>
     <string name="ffw_text_format" formatted="true" translatable="false">+%d</string>
     <string name="rew_text_format" formatted="true" translatable="false">-%d</string>
     <string name="ffw_text_regular_format" formatted="true" translatable="false">%d</string>
@@ -102,7 +102,7 @@
     //Main App
     <string name="player_speed_text_format" formatted="true">Speed (%.2fx)</string>
     <string name="rated_format" formatted="true">Rated: %.1f</string>
-    <string name="new_update_format" formatted="true">New update found!\n%s -> %s</string>
+    <string name="new_update_format" formatted="true">New update found!\n%1$s -> %2$s</string>
     <string name="filler" formatted="true">Filler</string>
     <string name="duration_format" formatted="true">%d min</string>
 
@@ -485,7 +485,7 @@
     <string name="kitsu_account_settings" translatable="false">Kitsu</string>
     <string name="trakt_account_settings" translatable="false">Trakt</string>
     -->
-    <string name="login_format" formatted="true">%s %s</string>
+    <string name="login_format" formatted="true">%1$s %2$s</string>
     <string name="account">account</string>
     <string name="logout">Logout</string>
     <string name="login">Login</string>
