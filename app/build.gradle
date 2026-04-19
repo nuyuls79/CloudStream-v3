@@ -11,18 +11,16 @@ if (allFilesFromDir != null && allFilesFromDir.length > 0) {
 }
 
 android {
-
-    compileSdkVersion 33
+    compileSdk 33  // gunakan 'compileSdk' bukan 'compileSdkVersion' (modern)
 
     buildFeatures {
         viewBinding true
     }
 
     defaultConfig {
-
         applicationId "foss.jacekun.cloudstream3xxx"
-        minSdkVersion 21
-        targetSdkVersion 28
+        minSdk 21
+        targetSdk 33  // naikkan dari 28 ke 33 agar sejajar dengan compileSdk
         multiDexEnabled true
 
         versionCode 1607
@@ -39,13 +37,10 @@ android {
         )
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
-
     }
 
     signingConfigs {
-
         debug {}
-
         release {
             if (prereleaseStoreFile != null) {
                 storeFile file(prereleaseStoreFile)
@@ -59,17 +54,14 @@ android {
                 keyPassword "android"
             }
         }
-
     }
 
     buildTypes {
-
         release {
             signingConfig signingConfigs.release
             minifyEnabled false
             shrinkResources false
         }
-
         prerelease {
             applicationIdSuffix ".prerelease"
             versionNameSuffix "-PRE"
@@ -78,7 +70,6 @@ android {
             minifyEnabled false
             shrinkResources false
         }
-
         debug {
             applicationIdSuffix ".debug"
             versionNameSuffix "-DEBUG"
@@ -86,7 +77,6 @@ android {
             minifyEnabled false
             shrinkResources false
         }
-
     }
 
     compileOptions {
@@ -98,6 +88,13 @@ android {
     kotlinOptions {
         jvmTarget = "11"
     }
+
+    // Hindari masalah duplicate class dari library yang bentrok
+    packagingOptions {
+        resources {
+            excludes += '/META-INF/{AL2.0,LGPL2.1}'
+        }
+    }
 }
 
 kapt {
@@ -107,16 +104,13 @@ kapt {
 // ========== KONFIGURASI UNTUK MEMAKSA VERSI RHINO ==========
 configurations.all {
     resolutionStrategy {
-        // Paksa semua dependensi Rhino ke versi 1.7.14
         force 'org.mozilla:rhino:1.7.14'
-        // Kecualikan versi 1.8.1 yang bermasalah
         exclude group: 'org.mozilla', module: 'rhino'
     }
 }
 // ============================================================
 
 dependencies {
-
     implementation 'androidx.core:core-ktx:1.9.0'
     implementation 'androidx.appcompat:appcompat:1.5.1'
     implementation 'com.google.android.material:material:1.7.0'
@@ -140,7 +134,7 @@ dependencies {
 
     // NewPipeExtractor - Versi terbaru yang tersedia di JitPack
     implementation 'com.github.teamnewpipe:NewPipeExtractor:v0.26.0'
-    
+
     // Rhino - Versi stabil 1.7.14 yang kompatibel dengan D8
     implementation 'org.mozilla:rhino:1.7.14'
 
@@ -171,4 +165,15 @@ dependencies {
     implementation "androidx.navigation:navigation-ui:2.5.3"
 
     coreLibraryDesugaring "com.android.tools:desugar_jdk_libs:1.2.2"
+
+    // ========== TAMBAHAN DEPENDENSI YANG DIPERLUKAN ==========
+    // Nicehttp (library internal CloudStream) - jika tersedia sebagai submodule
+    // Jika tidak, coba dari Maven (ganti versi dengan yang sesuai)
+    // implementation 'com.lagradost:nicehttp:1.0.0'
+
+    // khttp - untuk permintaan HTTP sederhana (opsional, jika kode masih menggunakannya)
+    implementation 'khttp:khttp:1.0.0'
+
+    // JavaScript engine (Rhino sudah ada, tapi pastikan tidak bentrok)
+    // Tidak perlu tambahan lagi
 }
