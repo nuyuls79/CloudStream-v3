@@ -104,12 +104,6 @@ kapt {
     correctErrorTypes true
 }
 
-repositories {
-    google()
-    mavenCentral()
-    maven { url "https://jitpack.io" }
-}
-
 dependencies {
 
     implementation 'androidx.core:core-ktx:1.9.0'
@@ -133,11 +127,13 @@ dependencies {
     implementation 'com.squareup.okhttp3:logging-interceptor:4.9.3'
     implementation 'com.squareup.okhttp3:okhttp-dnsoverhttps:4.9.3'
 
-    // FIX NiceHttp (versi terbaru yang tersedia di JitPack)
-    implementation 'com.github.lagradost:NiceHttp:0.4.0'
-
-    // FIX NewPipeExtractor - HAPUS HURUF 'v'
-    implementation 'com.github.TeamNewPipe:NewPipeExtractor:0.23.0'
+    // ========== PERBAIKAN DEPENDENSI ==========
+    // NiceHttp - gunakan versi yang tersedia
+    implementation 'com.github.lagradost:NiceHttp:0.3.9'
+    
+    // NewPipeExtractor - tanpa huruf 'v'
+    implementation 'com.github.TeamNewPipe:NewPipeExtractor:0.22.7'
+    // ==========================================
 
     implementation 'com.google.android.gms:play-services-cast-framework:21.3.0'
 
