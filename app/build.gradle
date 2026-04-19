@@ -127,13 +127,13 @@ dependencies {
     implementation 'com.squareup.okhttp3:logging-interceptor:4.9.3'
     implementation 'com.squareup.okhttp3:okhttp-dnsoverhttps:4.9.3'
 
-    // ========== PERBAIKAN DEPENDENSI UTAMA ==========
     // NewPipeExtractor - Versi terbaru yang tersedia di JitPack
     implementation 'com.github.teamnewpipe:NewPipeExtractor:v0.26.0'
     
-    // Rhino - Ganti dengan fork khusus Android (lebih stabil)
-    implementation 'com.faendir.rhino:rhino-android:1.6.0'
-    // ================================================
+    // Rhino - Versi Android dengan pengecualian modul yang tidak diperlukan
+    implementation('com.faendir.rhino:rhino-android:1.6.0') {
+        exclude group: 'org.mozilla', module: 'rhino-runtime'
+    }
 
     implementation 'com.google.android.gms:play-services-cast-framework:21.3.0'
 
