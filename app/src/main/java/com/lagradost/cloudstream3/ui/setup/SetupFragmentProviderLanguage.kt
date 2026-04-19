@@ -6,6 +6,8 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.AbsListView
 import android.widget.ArrayAdapter
+import android.widget.Button
+import android.widget.ListView
 import androidx.core.util.forEach
 import androidx.fragment.app.Fragment
 import androidx.navigation.fragment.findNavController
@@ -15,27 +17,31 @@ import com.lagradost.cloudstream3.APIHolder.getApiProviderLangSettings
 import com.lagradost.cloudstream3.R
 import com.lagradost.cloudstream3.utils.SubtitleHelper
 import com.lagradost.cloudstream3.utils.UIHelper.fixPaddingStatusbar
-import kotlinx.android.synthetic.main.fragment_setup_media.*
 
 class SetupFragmentProviderLanguage : Fragment() {
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
-        // Inflate the layout for this fragment
         return inflater.inflate(R.layout.fragment_setup_provider_languages, container, false)
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        context?.fixPaddingStatusbar(setup_root)
+
+        // Initialize views via findViewById
+        val setupRoot = view.findViewById<View>(R.id.setup_root)
+        val listview1 = view.findViewById<ListView>(R.id.listview1)
+        val nextBtt = view.findViewById<Button>(R.id.next_btt)
+        val prevBtt = view.findViewById<Button>(R.id.prev_btt)
+
+        context?.fixPaddingStatusbar(setupRoot)
 
         with(context) {
             if (this == null) return
             val settingsManager = PreferenceManager.getDefaultSharedPreferences(this)
 
-            val arrayAdapter =
-                ArrayAdapter<String>(this, R.layout.sort_bottom_single_choice)
+            val arrayAdapter = ArrayAdapter<String>(this, R.layout.sort_bottom_single_choice)
 
             val current = this.getApiProviderLangSettings()
             val langs = APIHolder.apis.map { it.lang }.toSet()
@@ -66,15 +72,13 @@ class SetupFragmentProviderLanguage : Fragment() {
                 ).apply()
             }
 
-            next_btt?.setOnClickListener {
+            nextBtt?.setOnClickListener {
                 findNavController().navigate(R.id.navigation_setup_provider_languages_to_navigation_setup_media)
             }
 
-            prev_btt?.setOnClickListener {
+            prevBtt?.setOnClickListener {
                 findNavController().popBackStack()
             }
         }
     }
-
-
 }

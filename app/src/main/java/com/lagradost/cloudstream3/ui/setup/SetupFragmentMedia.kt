@@ -6,6 +6,8 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.AbsListView
 import android.widget.ArrayAdapter
+import android.widget.Button
+import android.widget.ListView
 import androidx.fragment.app.Fragment
 import androidx.navigation.fragment.findNavController
 import androidx.preference.PreferenceManager
@@ -13,7 +15,6 @@ import com.lagradost.cloudstream3.R
 import com.lagradost.cloudstream3.utils.DataStore.removeKey
 import com.lagradost.cloudstream3.utils.HOMEPAGE_API
 import com.lagradost.cloudstream3.utils.UIHelper.fixPaddingStatusbar
-import kotlinx.android.synthetic.main.fragment_setup_media.*
 
 
 class SetupFragmentMedia : Fragment() {
@@ -26,17 +27,22 @@ class SetupFragmentMedia : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        context?.fixPaddingStatusbar(setup_root)
+
+        // Initialize views via findViewById
+        val setupRoot = view.findViewById<View>(R.id.setup_root)
+        val listview1 = view.findViewById<ListView>(R.id.listview1)
+        val nextBtt = view.findViewById<Button>(R.id.next_btt)
+        val prevBtt = view.findViewById<Button>(R.id.prev_btt)
+
+        context?.fixPaddingStatusbar(setupRoot)
 
         with(context) {
             if (this == null) return
             val settingsManager = PreferenceManager.getDefaultSharedPreferences(this)
 
-            val arrayAdapter =
-                ArrayAdapter<String>(this, R.layout.sort_bottom_single_choice)
+            val arrayAdapter = ArrayAdapter<String>(this, R.layout.sort_bottom_single_choice)
 
-            val currentPrefMedia =
-                settingsManager.getInt(getString(R.string.prefer_media_type_key), 0)
+            val currentPrefMedia = settingsManager.getInt(getString(R.string.prefer_media_type_key), 0)
 
             val prefNames = resources.getStringArray(R.array.media_type_pref)
             val prefValues = resources.getIntArray(R.array.media_type_pref_values)
@@ -55,15 +61,13 @@ class SetupFragmentMedia : Fragment() {
                 removeKey(HOMEPAGE_API)
             }
 
-            next_btt?.setOnClickListener {
+            nextBtt?.setOnClickListener {
                 findNavController().navigate(R.id.navigation_setup_media_to_navigation_setup_layout)
             }
 
-            prev_btt?.setOnClickListener {
+            prevBtt?.setOnClickListener {
                 findNavController().popBackStack()
             }
         }
     }
-
-
 }

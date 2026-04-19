@@ -6,6 +6,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.AbsListView
 import android.widget.ArrayAdapter
+import android.widget.ListView
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.navigation.fragment.findNavController
@@ -18,23 +19,28 @@ import com.lagradost.cloudstream3.ui.settings.appLanguages
 import com.lagradost.cloudstream3.ui.settings.getCurrentLocale
 import com.lagradost.cloudstream3.utils.SubtitleHelper
 import com.lagradost.cloudstream3.utils.UIHelper.fixPaddingStatusbar
-import kotlinx.android.synthetic.main.fragment_setup_language.*
-import kotlinx.android.synthetic.main.fragment_setup_media.listview1
-import kotlinx.android.synthetic.main.fragment_setup_media.next_btt
 
 const val HAS_DONE_SETUP_KEY = "HAS_DONE_SETUP"
+
 class SetupFragmentLanguage : Fragment() {
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
-        // Inflate the layout for this fragment
         return inflater.inflate(R.layout.fragment_setup_language, container, false)
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        context?.fixPaddingStatusbar(setup_root)
+
+        // Initialize views via findViewById
+        val setupRoot = view.findViewById<View>(R.id.setup_root)
+        val appIconImage = view.findViewById<android.widget.ImageView>(R.id.app_icon_image)
+        val listview1 = view.findViewById<ListView>(R.id.listview1)
+        val nextBtt = view.findViewById<android.widget.Button>(R.id.next_btt)
+        val skipBtt = view.findViewById<android.widget.Button>(R.id.skip_btt)
+
+        context?.fixPaddingStatusbar(setupRoot)
 
         // We don't want a crash for all users
         normalSafeApiCall {
@@ -42,8 +48,7 @@ class SetupFragmentLanguage : Fragment() {
                 if (this == null) return@normalSafeApiCall
                 val settingsManager = PreferenceManager.getDefaultSharedPreferences(this)
 
-                val arrayAdapter =
-                    ArrayAdapter<String>(this, R.layout.sort_bottom_single_choice)
+                val arrayAdapter = ArrayAdapter<String>(this, R.layout.sort_bottom_single_choice)
 
                 // Icons may crash on some weird android versions?
                 normalSafeApiCall {
@@ -52,7 +57,7 @@ class SetupFragmentLanguage : Fragment() {
                         BuildConfig.BUILD_TYPE == "prerelease" -> R.drawable.cloud_2_gradient_beta
                         else -> R.drawable.cloud_2_gradient
                     }
-                    app_icon_image?.setImageDrawable(ContextCompat.getDrawable(this, drawable))
+                    appIconImage?.setImageDrawable(ContextCompat.getDrawable(this, drawable))
                 }
 
                 val current = getCurrentLocale(this)
@@ -75,16 +80,14 @@ class SetupFragmentLanguage : Fragment() {
                     activity?.recreate()
                 }
 
-                next_btt?.setOnClickListener {
+                nextBtt?.setOnClickListener {
                     findNavController().navigate(R.id.action_navigation_setup_language_to_navigation_setup_provider_languages)
                 }
 
-                skip_btt?.setOnClickListener {
+                skipBtt?.setOnClickListener {
                     findNavController().navigate(R.id.navigation_home)
                 }
             }
         }
     }
-
-
 }
