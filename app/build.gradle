@@ -123,17 +123,17 @@ dependencies {
 
     implementation 'org.jsoup:jsoup:1.15.3'
 
-    // ========== PERBAIKAN DEPENDENSI ==========
-    // 1. NiceHttp sudah tidak aktif, digantikan dengan OkHttp yang sudah ada di proyek.
-    //    (Hapus baris implementation 'com.github.lagradost:NiceHttp:...' yang lama)
-    
-    // 2. NewPipeExtractor - Gunakan versi terbaru yang tersedia di JitPack (v0.26.0)
-    implementation 'com.github.teamnewpipe:NewPipeExtractor:v0.26.0'
-    // ==========================================
-
     implementation 'com.squareup.okhttp3:okhttp:4.9.3'
     implementation 'com.squareup.okhttp3:logging-interceptor:4.9.3'
     implementation 'com.squareup.okhttp3:okhttp-dnsoverhttps:4.9.3'
+
+    // ========== PERBAIKAN DEPENDENSI UTAMA ==========
+    // NewPipeExtractor - Versi terbaru yang tersedia di JitPack
+    implementation 'com.github.teamnewpipe:NewPipeExtractor:v0.26.0'
+    
+    // Rhino - Ganti dengan fork khusus Android (lebih stabil)
+    implementation 'com.faendir.rhino:rhino-android:1.6.0'
+    // ================================================
 
     implementation 'com.google.android.gms:play-services-cast-framework:21.3.0'
 
@@ -149,7 +149,6 @@ dependencies {
     implementation 'jp.wasabeef:glide-transformations:4.3.0'
     implementation 'com.facebook.shimmer:shimmer:0.5.0'
 
-    implementation 'org.mozilla:rhino:1.7.14'
     implementation 'com.jaredrummler:colorpicker:1.1.0'
     implementation 'com.github.albfernandez:juniversalchardet:2.4.0'
 
