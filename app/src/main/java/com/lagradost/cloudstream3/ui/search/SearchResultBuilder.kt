@@ -9,13 +9,13 @@ import androidx.cardview.widget.CardView
 import androidx.core.view.isVisible
 import androidx.preference.PreferenceManager
 import com.lagradost.cloudstream3.*
+import com.lagradost.cloudstream3.databinding.HomeResultGridBinding
 import com.lagradost.cloudstream3.ui.settings.SettingsFragment.Companion.isTrueTvSettings
 import com.lagradost.cloudstream3.utils.AppUtils.getNameFull
 import com.lagradost.cloudstream3.utils.DataStoreHelper
 import com.lagradost.cloudstream3.utils.DataStoreHelper.fixVisual
 import com.lagradost.cloudstream3.utils.SubtitleHelper
 import com.lagradost.cloudstream3.utils.UIHelper.setImage
-import kotlinx.android.synthetic.main.home_result_grid.view.*
 
 object SearchResultBuilder {
     private val showCache: MutableMap<String, Boolean> = mutableMapOf()
@@ -42,22 +42,23 @@ object SearchResultBuilder {
         nextFocusUp: Int? = null,
         nextFocusDown: Int? = null,
     ) {
-        val cardView: ImageView = itemView.imageView
-        val cardText: TextView? = itemView.imageText
+        val binding = HomeResultGridBinding.bind(itemView)
 
-        val textIsDub: TextView? = itemView.text_is_dub
-        val textIsSub: TextView? = itemView.text_is_sub
-        val textFlag: TextView? = itemView.text_flag
-        val textQuality: TextView? = itemView.text_quality
-        val shadow: View? = itemView.title_shadow
+        val cardView: ImageView = binding.imageView
+        val cardText: TextView? = binding.imageText
 
-        val bg: CardView = itemView.background_card
+        val textIsDub: TextView? = binding.textIsDub
+        val textIsSub: TextView? = binding.textIsSub
+        val textFlag: TextView? = binding.textFlag
+        val textQuality: TextView? = binding.textQuality
+        val shadow: View? = binding.titleShadow
 
-        val bar: ProgressBar? = itemView.watchProgress
-        val playImg: ImageView? = itemView.search_item_download_play
+        val bg: CardView = binding.backgroundCard
+
+        val bar: ProgressBar? = binding.watchProgress
+        val playImg: ImageView? = binding.searchItemDownloadPlay
 
         // Do logic
-
         bar?.isVisible = false
         playImg?.isVisible = false
         textIsDub?.isVisible = false

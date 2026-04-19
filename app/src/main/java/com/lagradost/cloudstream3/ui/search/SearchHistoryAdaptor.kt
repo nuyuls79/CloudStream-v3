@@ -10,7 +10,6 @@ import androidx.recyclerview.widget.RecyclerView
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.R
 import com.lagradost.cloudstream3.TvType
-import kotlinx.android.synthetic.main.search_history_item.view.*
 
 data class SearchHistoryItem(
     @JsonProperty("searchedAt") val searchedAt: Long,
@@ -48,18 +47,14 @@ class SearchHistoryAdaptor(
         }
     }
 
-    override fun getItemCount(): Int {
-        return cardList.size
-    }
+    override fun getItemCount(): Int = cardList.size
 
     fun updateList(newList: List<SearchHistoryItem>) {
         val diffResult = DiffUtil.calculateDiff(
             SearchHistoryDiffCallback(this.cardList, newList)
         )
-
         cardList.clear()
         cardList.addAll(newList)
-
         diffResult.dispatchUpdatesTo(this)
     }
 
@@ -67,11 +62,11 @@ class SearchHistoryAdaptor(
     constructor(
         itemView: View,
         private val clickCallback: (SearchHistoryCallback) -> Unit,
-    ) :
-        RecyclerView.ViewHolder(itemView) {
-        private val removeButton: ImageView = itemView.home_history_remove
-        private val openButton: View = itemView.home_history_tab
-        private val title: TextView = itemView.home_history_title
+    ) : RecyclerView.ViewHolder(itemView) {
+        // Mengganti synthetic dengan findViewById
+        private val removeButton: ImageView = itemView.findViewById(R.id.home_history_remove)
+        private val openButton: View = itemView.findViewById(R.id.home_history_tab)
+        private val title: TextView = itemView.findViewById(R.id.home_history_title)
 
         fun bind(card: SearchHistoryItem) {
             title.text = card.searchText
@@ -89,15 +84,12 @@ class SearchHistoryAdaptor(
 class SearchHistoryDiffCallback(
     private val oldList: List<SearchHistoryItem>,
     private val newList: List<SearchHistoryItem>
-) :
-    DiffUtil.Callback() {
+) : DiffUtil.Callback() {
     override fun areItemsTheSame(oldItemPosition: Int, newItemPosition: Int) =
         oldList[oldItemPosition].searchText == newList[newItemPosition].searchText
 
     override fun getOldListSize() = oldList.size
-
     override fun getNewListSize() = newList.size
-
     override fun areContentsTheSame(oldItemPosition: Int, newItemPosition: Int) =
         oldList[oldItemPosition] == newList[newItemPosition]
 }
