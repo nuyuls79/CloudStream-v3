@@ -49,8 +49,6 @@ import com.lagradost.cloudstream3.ui.settings.SettingsFragment.Companion.isTvSet
 import com.lagradost.cloudstream3.utils.AppUtils.loadSearchResult
 import com.lagradost.cloudstream3.utils.AppUtils.setMaxViewPoolSize
 import com.lagradost.cloudstream3.utils.Coroutines.ioSafe
-import com.lagradost.cloudstream3.utils.DataStore.getKey
-import com.lagradost.cloudstream3.utils.DataStore.setKey
 import com.lagradost.cloudstream3.utils.DataStoreHelper
 import com.lagradost.cloudstream3.utils.DataStoreHelper.deleteAllBookmarkedData
 import com.lagradost.cloudstream3.utils.DataStoreHelper.deleteAllResumeStateIds
@@ -68,36 +66,7 @@ import com.lagradost.cloudstream3.utils.UIHelper.popupMenuNoIconsAndNoStringRes
 import com.lagradost.cloudstream3.utils.UIHelper.setImage
 import com.lagradost.cloudstream3.utils.UIHelper.setImageBlur
 import com.lagradost.cloudstream3.widget.CenterZoomLayoutManager
-import kotlinx.android.synthetic.main.fragment_home.*
-import kotlinx.android.synthetic.main.fragment_home.home_api_fab
-import kotlinx.android.synthetic.main.fragment_home.home_bookmarked_child_recyclerview
-import kotlinx.android.synthetic.main.fragment_home.home_bookmarked_holder
-import kotlinx.android.synthetic.main.fragment_home.home_change_api_loading
-import kotlinx.android.synthetic.main.fragment_home.home_loaded
-import kotlinx.android.synthetic.main.fragment_home.home_loading
-import kotlinx.android.synthetic.main.fragment_home.home_loading_error
-import kotlinx.android.synthetic.main.fragment_home.home_loading_shimmer
-import kotlinx.android.synthetic.main.fragment_home.home_loading_statusbar
-import kotlinx.android.synthetic.main.fragment_home.home_main_poster_recyclerview
-import kotlinx.android.synthetic.main.fragment_home.home_master_recycler
-import kotlinx.android.synthetic.main.fragment_home.home_plan_to_watch_btt
-import kotlinx.android.synthetic.main.fragment_home.home_provider_meta_info
-import kotlinx.android.synthetic.main.fragment_home.home_provider_name
-import kotlinx.android.synthetic.main.fragment_home.home_reload_connection_open_in_browser
-import kotlinx.android.synthetic.main.fragment_home.home_reload_connectionerror
-import kotlinx.android.synthetic.main.fragment_home.home_statusbar
-import kotlinx.android.synthetic.main.fragment_home.home_type_completed_btt
-import kotlinx.android.synthetic.main.fragment_home.home_type_dropped_btt
-import kotlinx.android.synthetic.main.fragment_home.home_type_on_hold_btt
-import kotlinx.android.synthetic.main.fragment_home.home_type_watching_btt
-import kotlinx.android.synthetic.main.fragment_home.home_watch_child_recyclerview
-import kotlinx.android.synthetic.main.fragment_home.home_watch_holder
-import kotlinx.android.synthetic.main.fragment_home.home_watch_parent_item_title
-import kotlinx.android.synthetic.main.fragment_home.result_error_text
-import kotlinx.android.synthetic.main.fragment_home_tv.*
-import kotlinx.android.synthetic.main.home_episodes_expanded.*
 import java.util.*
-import kotlin.random.Random
 
 const val HOME_BOOKMARK_VALUE_LIST = "home_bookmarked_last_list"
 const val HOME_PREF_HOMEPAGE = "home_pref_homepage"
@@ -145,40 +114,31 @@ class HomeFragment : Fragment() {
             val title = bottomSheetDialogBuilder.findViewById<TextView>(R.id.home_expanded_text)!!
             val item = expand.list
             title.text = item.name
-            val recycle =
-                bottomSheetDialogBuilder.findViewById<AutofitRecyclerView>(R.id.home_expanded_recycler)!!
-            val titleHolder =
-                bottomSheetDialogBuilder.findViewById<FrameLayout>(R.id.home_expanded_drag_down)!!
+            val recycle = bottomSheetDialogBuilder.findViewById<AutofitRecyclerView>(R.id.home_expanded_recycler)!!
+            val titleHolder = bottomSheetDialogBuilder.findViewById<FrameLayout>(R.id.home_expanded_drag_down)!!
 
-            val delete = bottomSheetDialogBuilder.home_expanded_delete
+            val delete = bottomSheetDialogBuilder.findViewById<TextView>(R.id.home_expanded_delete)
             delete.isGone = deleteCallback == null
             if (deleteCallback != null) {
                 delete.setOnClickListener {
                     try {
                         val builder: AlertDialog.Builder = AlertDialog.Builder(context)
-                        val dialogClickListener =
-                            DialogInterface.OnClickListener { _, which ->
-                                when (which) {
-                                    DialogInterface.BUTTON_POSITIVE -> {
-                                        deleteCallback.invoke()
-                                        bottomSheetDialogBuilder.dismissSafe(this)
-                                    }
-                                    DialogInterface.BUTTON_NEGATIVE -> {}
+                        val dialogClickListener = DialogInterface.OnClickListener { _, which ->
+                            when (which) {
+                                DialogInterface.BUTTON_POSITIVE -> {
+                                    deleteCallback.invoke()
+                                    bottomSheetDialogBuilder.dismissSafe(this)
                                 }
+                                DialogInterface.BUTTON_NEGATIVE -> {}
                             }
-
+                        }
                         builder.setTitle(R.string.delete_file)
-                            .setMessage(
-                                context.getString(R.string.delete_message).format(
-                                    item.name
-                                )
-                            )
+                            .setMessage(context.getString(R.string.delete_message).format(item.name))
                             .setPositiveButton(R.string.delete, dialogClickListener)
                             .setNegativeButton(R.string.cancel, dialogClickListener)
                             .show()
                     } catch (e: Exception) {
                         logError(e)
-                        // ye you somehow fucked up formatting did you?
                     }
                 }
             }
@@ -187,10 +147,7 @@ class HomeFragment : Fragment() {
                 bottomSheetDialogBuilder.dismissSafe(this)
             }
 
-
-            // Span settings
             recycle.spanCount = currentSpan
-
             recycle.adapter = SearchAdapter(item.list.toMutableList(), recycle) { callback ->
                 handleSearchClickCallback(this, callback)
                 if (callback.action == SEARCH_ACTION_LOAD || callback.action == SEARCH_ACTION_PLAY_FILE) {
@@ -206,10 +163,8 @@ class HomeFragment : Fragment() {
 
                 override fun onScrollStateChanged(recyclerView: RecyclerView, newState: Int) {
                     super.onScrollStateChanged(recyclerView, newState)
-
                     val adapter = recyclerView.adapter
                     if (adapter !is SearchAdapter) return
-
                     val count = adapter.itemCount
                     val currentHasNext = adapter.hasNext
                     if (!recyclerView.canScrollVertically(1) && currentHasNext && expandCount != count) {
@@ -228,17 +183,11 @@ class HomeFragment : Fragment() {
 
             val spanListener = { span: Int ->
                 recycle.spanCount = span
-                //(recycle.adapter as SearchAdapter).notifyDataSetChanged()
             }
-
             configEvent += spanListener
-
             bottomSheetDialogBuilder.setOnDismissListener {
                 configEvent -= spanListener
             }
-
-            //(recycle.adapter as SearchAdapter).notifyDataSetChanged()
-
             bottomSheetDialogBuilder.show()
         }
 
@@ -266,27 +215,18 @@ class HomeFragment : Fragment() {
 
         fun Context.selectHomepage(selectedApiName: String?, callback: (String) -> Unit) {
             val validAPIs = filterProviderByPreferredMedia().toMutableList()
-
             validAPIs.add(0, randomApi)
             validAPIs.add(0, noneApi)
-            //val builder: AlertDialog.Builder = AlertDialog.Builder(this)
-            //builder.setView(R.layout.home_select_mainpage)
-            val builder =
-                BottomSheetDialog(this)
-
+            val builder = BottomSheetDialog(this)
             builder.setContentView(R.layout.home_select_mainpage)
             builder.show()
             builder.let { dialog ->
                 val isMultiLang = getApiProviderLangSettings().size > 1
-                //dialog.window?.setGravity(Gravity.BOTTOM)
-
                 var currentApiName = selectedApiName
-
                 var currentValidApis: MutableList<MainAPI> = mutableListOf()
                 val preSelectedTypes = this.getKey<List<String>>(HOME_PREF_HOMEPAGE)
                     ?.mapNotNull { listName -> TvType.values().firstOrNull { it.name == listName } }
-                    ?.toMutableList()
-                    ?: mutableListOf(TvType.Movie, TvType.TvSeries)
+                    ?.toMutableList() ?: mutableListOf(TvType.Movie, TvType.TvSeries)
 
                 val anime = dialog.findViewById<MaterialButton>(R.id.home_select_anime)
                 val cartoons = dialog.findViewById<MaterialButton>(R.id.home_select_cartoons)
@@ -301,10 +241,7 @@ class HomeFragment : Fragment() {
 
                 val pairList = getPairList(anime, cartoons, tvs, docs, movies, asian, livestream, nsfw)
 
-                cancelBtt?.setOnClickListener {
-                    dialog.dismissSafe()
-                }
-
+                cancelBtt?.setOnClickListener { dialog.dismissSafe() }
                 applyBtt?.setOnClickListener {
                     if (currentApiName != selectedApiName) {
                         currentApiName?.let(callback)
@@ -316,11 +253,9 @@ class HomeFragment : Fragment() {
                 val arrayAdapter = ArrayAdapter<String>(this, R.layout.sort_bottom_single_choice)
                 listView?.adapter = arrayAdapter
                 listView?.choiceMode = AbsListView.CHOICE_MODE_SINGLE
-
                 listView?.setOnItemClickListener { _, _, i, _ ->
                     if (currentValidApis.isNotEmpty()) {
                         currentApiName = currentValidApis[i].name
-                        //to switch to apply simply remove this
                         currentApiName?.let(callback)
                         dialog.dismissSafe()
                     }
@@ -328,17 +263,12 @@ class HomeFragment : Fragment() {
 
                 fun updateList() {
                     this.setKey(HOME_PREF_HOMEPAGE, preSelectedTypes)
-
                     arrayAdapter.clear()
                     currentValidApis = validAPIs.filter { api ->
-                        api.hasMainPage && api.supportedTypes.any {
-                            preSelectedTypes.contains(it)
-                        }
+                        api.hasMainPage && api.supportedTypes.any { preSelectedTypes.contains(it) }
                     }.sortedBy { it.name.lowercase() }.toMutableList()
                     currentValidApis.addAll(0, validAPIs.subList(0, 2))
-
-                    val names =
-                        currentValidApis.map { if (isMultiLang) "${getFlagFromIso(it.lang)?.plus(" ") ?: ""}${it.name}" else it.name }
+                    val names = currentValidApis.map { if (isMultiLang) "${getFlagFromIso(it.lang)?.plus(" ") ?: ""}${it.name}" else it.name }
                     val index = currentValidApis.map { it.name }.indexOf(currentApiName)
                     listView?.setItemChecked(index, true)
                     arrayAdapter.addAll(names)
@@ -346,25 +276,18 @@ class HomeFragment : Fragment() {
                 }
 
                 for ((button, validTypes) in pairList) {
-                    val isValid =
-                        validAPIs.any { api -> validTypes.any { api.supportedTypes.contains(it) } }
+                    val isValid = validAPIs.any { api -> validTypes.any { api.supportedTypes.contains(it) } }
                     button?.isVisible = isValid
                     if (isValid) {
-                        fun buttonContains(): Boolean {
-                            return preSelectedTypes.any { validTypes.contains(it) }
-                        }
-
+                        fun buttonContains(): Boolean = preSelectedTypes.any { validTypes.contains(it) }
                         button?.isSelected = buttonContains()
                         button?.setOnClickListener {
                             preSelectedTypes.clear()
                             preSelectedTypes.addAll(validTypes)
-                            for ((otherButton, _) in pairList) {
-                                otherButton?.isSelected = false
-                            }
+                            for ((otherButton, _) in pairList) otherButton?.isSelected = false
                             button.isSelected = true
                             updateList()
                         }
-
                         button?.setOnLongClickListener {
                             if (!buttonContains()) {
                                 button.isSelected = true
@@ -374,7 +297,7 @@ class HomeFragment : Fragment() {
                                 preSelectedTypes.removeAll(validTypes)
                             }
                             updateList()
-                            return@setOnLongClickListener true
+                            true
                         }
                     }
                 }
@@ -385,27 +308,103 @@ class HomeFragment : Fragment() {
 
     private val homeViewModel: HomeViewModel by activityViewModels()
 
+    // View references
+    private lateinit var homeMainHolder: View
+    private lateinit var homeMainPosterRecyclerview: RecyclerView
+    private lateinit var homeChangeApi: View
+    private lateinit var homeChangeApiLoading: View
+    private lateinit var homeApiFab: com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
+    private lateinit var homeRandom: com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
+    private lateinit var homeProviderName: TextView
+    private lateinit var homeSearch: SearchView
+    private lateinit var homeProviderMetaInfo: TextView
+    private lateinit var homeLoadingShimmer: View
+    private lateinit var homeLoading: View
+    private lateinit var homeLoadingError: View
+    private lateinit var homeLoaded: NestedScrollView
+    private lateinit var resultErrorText: TextView
+    private lateinit var homeReloadConnectionerror: TextView
+    private lateinit var homeReloadConnectionOpenInBrowser: TextView
+    private lateinit var homeMasterRecycler: RecyclerView
+    private lateinit var homeBookmarkedHolder: View
+    private lateinit var homeBookmarkedChildRecyclerview: RecyclerView
+    private lateinit var homeBookmarkedChildMoreInfo: View
+    private lateinit var homeWatchHolder: View
+    private lateinit var homeWatchChildRecyclerview: RecyclerView
+    private lateinit var homeWatchChildMoreInfo: View
+    private lateinit var homeWatchParentItemTitle: TextView
+    private lateinit var homeStatusbar: View
+    private lateinit var homeLoadingStatusbar: View
+    private lateinit var homeProfilePictureHolder: View
+    private lateinit var homeProfilePicture: ImageView
+    private lateinit var homeMainPlay: View
+    private lateinit var homeMainInfo: View
+    private lateinit var homeMainText: TextView
+    private lateinit var homeBlurPoster: ImageView
+    private lateinit var homeFocusText: TextView
+    private lateinit var homeTypeWatchingBtt: MaterialButton
+    private lateinit var homeTypeCompletedBtt: MaterialButton
+    private lateinit var homeTypeDroppedBtt: MaterialButton
+    private lateinit var homeTypeOnHoldBtt: MaterialButton
+    private lateinit var homePlanToWatchBtt: MaterialButton
+
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
-        //homeViewModel =
-        //     ViewModelProvider(this).get(HomeViewModel::class.java)
-        val layout =
-            if (context?.isTvSettings() == true) R.layout.fragment_home_tv else R.layout.fragment_home
+        val layout = if (context?.isTvSettings() == true) R.layout.fragment_home_tv else R.layout.fragment_home
         return inflater.inflate(layout, container, false)
     }
 
+    private fun initViews(view: View) {
+        homeMainHolder = view.findViewById(R.id.home_main_holder)
+        homeMainPosterRecyclerview = view.findViewById(R.id.home_main_poster_recyclerview)
+        homeChangeApi = view.findViewById(R.id.home_change_api)
+        homeChangeApiLoading = view.findViewById(R.id.home_change_api_loading)
+        homeApiFab = view.findViewById(R.id.home_api_fab)
+        homeRandom = view.findViewById(R.id.home_random)
+        homeProviderName = view.findViewById(R.id.home_provider_name)
+        homeSearch = view.findViewById(R.id.home_search)
+        homeProviderMetaInfo = view.findViewById(R.id.home_provider_meta_info)
+        homeLoadingShimmer = view.findViewById(R.id.home_loading_shimmer)
+        homeLoading = view.findViewById(R.id.home_loading)
+        homeLoadingError = view.findViewById(R.id.home_loading_error)
+        homeLoaded = view.findViewById(R.id.home_loaded)
+        resultErrorText = view.findViewById(R.id.result_error_text)
+        homeReloadConnectionerror = view.findViewById(R.id.home_reload_connectionerror)
+        homeReloadConnectionOpenInBrowser = view.findViewById(R.id.home_reload_connection_open_in_browser)
+        homeMasterRecycler = view.findViewById(R.id.home_master_recycler)
+        homeBookmarkedHolder = view.findViewById(R.id.home_bookmarked_holder)
+        homeBookmarkedChildRecyclerview = view.findViewById(R.id.home_bookmarked_child_recyclerview)
+        homeBookmarkedChildMoreInfo = view.findViewById(R.id.home_bookmarked_child_more_info)
+        homeWatchHolder = view.findViewById(R.id.home_watch_holder)
+        homeWatchChildRecyclerview = view.findViewById(R.id.home_watch_child_recyclerview)
+        homeWatchChildMoreInfo = view.findViewById(R.id.home_watch_child_more_info)
+        homeWatchParentItemTitle = view.findViewById(R.id.home_watch_parent_item_title)
+        homeStatusbar = view.findViewById(R.id.home_statusbar)
+        homeLoadingStatusbar = view.findViewById(R.id.home_loading_statusbar)
+        homeProfilePictureHolder = view.findViewById(R.id.home_profile_picture_holder)
+        homeProfilePicture = view.findViewById(R.id.home_profile_picture)
+        homeMainPlay = view.findViewById(R.id.home_main_play)
+        homeMainInfo = view.findViewById(R.id.home_main_info)
+        homeMainText = view.findViewById(R.id.home_main_text)
+        homeBlurPoster = view.findViewById(R.id.home_blur_poster)
+        homeFocusText = view.findViewById(R.id.home_focus_text)
+        homeTypeWatchingBtt = view.findViewById(R.id.home_type_watching_btt)
+        homeTypeCompletedBtt = view.findViewById(R.id.home_type_completed_btt)
+        homeTypeDroppedBtt = view.findViewById(R.id.home_type_dropped_btt)
+        homeTypeOnHoldBtt = view.findViewById(R.id.home_type_on_hold_btt)
+        homePlanToWatchBtt = view.findViewById(R.id.home_plan_to_watch_btt)
+    }
+
     private fun toggleMainVisibility(visible: Boolean) {
-        home_main_holder?.isVisible = visible
-        home_main_poster_recyclerview?.isVisible = visible
+        homeMainHolder.isVisible = visible
+        homeMainPosterRecyclerview.isVisible = visible
     }
 
     private fun fixGrid() {
-        activity?.getSpanCount()?.let {
-            currentSpan = it
-        }
+        activity?.getSpanCount()?.let { currentSpan = it }
         configEvent.invoke(currentSpan)
     }
 
@@ -413,13 +412,6 @@ class HomeFragment : Fragment() {
         view.context.selectHomepage(currentApiName) { api ->
             homeViewModel.loadAndCancel(api)
         }
-        /*val validAPIs = view.context?.filterProviderByPreferredMedia()?.toMutableList() ?: mutableListOf()
-
-        validAPIs.add(0, randomApi)
-        validAPIs.add(0, noneApi)
-        view.popupMenuNoIconsAndNoStringRes(validAPIs.mapIndexed { index, api -> Pair(index, api.name) }) {
-            homeViewModel.loadAndCancel(validAPIs[itemId].name)
-        }*/
     }
 
     override fun onConfigurationChanged(newConfig: Configuration) {
@@ -431,11 +423,6 @@ class HomeFragment : Fragment() {
         super.onResume()
         reloadStored()
     }
-/*
-    override fun onStop() {
-        backEvent -= ::handleBack
-        super.onStop()
-    }*/
 
     private fun reloadStored() {
         homeViewModel.loadResumeWatching()
@@ -446,15 +433,9 @@ class HomeFragment : Fragment() {
         homeViewModel.loadStoredData(list)
     }
 
-    /*private fun handleBack(poppedFragment: Boolean) {
-        if (poppedFragment) {
-            reloadStored()
-        }
-    }*/
-
     private fun focusCallback(card: SearchResponse) {
-        home_focus_text?.text = card.name
-        home_blur_poster?.setImageBlur(card.posterUrl, 50)
+        homeFocusText.text = card.name
+        homeBlurPoster.setImageBlur(card.posterUrl, 50)
     }
 
     private fun homeHandleSearch(callback: SearchClickCallback) {
@@ -471,39 +452,34 @@ class HomeFragment : Fragment() {
     @SuppressLint("SetTextI18n")
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        initViews(view)
         fixGrid()
 
-        home_change_api?.setOnClickListener(apiChangeClickListener)
-        home_change_api_loading?.setOnClickListener(apiChangeClickListener)
-        home_api_fab?.setOnClickListener(apiChangeClickListener)
-        home_random?.setOnClickListener {
+        homeChangeApi.setOnClickListener(apiChangeClickListener)
+        homeChangeApiLoading.setOnClickListener(apiChangeClickListener)
+        homeApiFab.setOnClickListener(apiChangeClickListener)
+        homeRandom.setOnClickListener {
             if (listHomepageItems.isNotEmpty()) {
                 activity.loadSearchResult(listHomepageItems.random())
             }
         }
 
-        //Disable Random button, if its toggled off on settings
         context?.let {
             val settingsManager = PreferenceManager.getDefaultSharedPreferences(it)
-            toggleRandomButton =
-                settingsManager.getBoolean(getString(R.string.random_button_key), false)
-            home_random?.isVisible = toggleRandomButton
-            if (!toggleRandomButton) {
-                home_random?.visibility = View.GONE
-            }
+            toggleRandomButton = settingsManager.getBoolean(getString(R.string.random_button_key), false)
+            homeRandom.isVisible = toggleRandomButton
+            if (!toggleRandomButton) homeRandom.visibility = View.GONE
         }
 
         observe(homeViewModel.apiName) { apiName ->
             currentApiName = apiName
             setKey(HOMEPAGE_API, apiName)
-            home_api_fab?.text = apiName
-            home_provider_name?.text = apiName
+            homeApiFab.text = apiName
+            homeProviderName.text = apiName
             try {
-                home_search?.queryHint = getString(R.string.search_hint_site).format(apiName)
-            } catch (e: Exception) {
-                logError(e)
-            }
-            home_provider_meta_info?.isVisible = false
+                homeSearch.queryHint = getString(R.string.search_hint_site).format(apiName)
+            } catch (e: Exception) { logError(e) }
+            homeProviderMetaInfo.isVisible = false
             getApiFromNameNull(apiName)?.let { currentApi ->
                 val typeChoices = listOf(
                     Pair(R.string.movies, listOf(TvType.Movie)),
@@ -517,9 +493,8 @@ class HomeFragment : Fragment() {
                     Pair(R.string.hentai, listOf(TvType.Hentai)),
                     Pair(R.string.xxx, listOf(TvType.XXX))
                 ).filter { item -> currentApi.supportedTypes.any { type -> item.second.contains(type) } }
-                home_provider_meta_info?.text =
-                    typeChoices.joinToString(separator = ", ") { getString(it.first) }
-                home_provider_meta_info?.isVisible = true
+                homeProviderMetaInfo.text = typeChoices.joinToString(separator = ", ") { getString(it.first) }
+                homeProviderMetaInfo.isVisible = true
             }
         }
 
@@ -527,290 +502,156 @@ class HomeFragment : Fragment() {
             if (items.isNullOrEmpty()) {
                 toggleMainVisibility(false)
             } else {
-                val tempAdapter = home_main_poster_recyclerview.adapter as HomeChildItemAdapter?
-                // no need to reload if it has the same data
+                val tempAdapter = homeMainPosterRecyclerview.adapter as HomeChildItemAdapter?
                 if (tempAdapter != null && tempAdapter.cardList == items) {
                     toggleMainVisibility(true)
                     return@observe
                 }
-
                 val randomSize = items.size
-                home_main_poster_recyclerview?.adapter =
-                    HomeChildItemAdapter(
-                        items.toMutableList(),
-                        R.layout.home_result_big_grid,
-                        nextFocusUp = home_main_poster_recyclerview.nextFocusUpId,
-                        nextFocusDown = home_main_poster_recyclerview.nextFocusDownId
-                    ) { callback ->
-                        homeHandleSearch(callback)
-                    }
+                homeMainPosterRecyclerview.adapter = HomeChildItemAdapter(
+                    items.toMutableList(),
+                    R.layout.home_result_big_grid,
+                    nextFocusUp = homeMainPosterRecyclerview.nextFocusUpId,
+                    nextFocusDown = homeMainPosterRecyclerview.nextFocusDownId
+                ) { callback -> homeHandleSearch(callback) }
                 if (context?.isTvSettings() == false) {
-                    home_main_poster_recyclerview?.post {
-                        (home_main_poster_recyclerview?.layoutManager as CenterZoomLayoutManager?)?.let { manager ->
+                    homeMainPosterRecyclerview.post {
+                        (homeMainPosterRecyclerview.layoutManager as? CenterZoomLayoutManager)?.let { manager ->
                             manager.updateSize(forceUpdate = true)
                             if (randomSize > 2) {
                                 manager.scrollToPosition(randomSize / 2)
                                 manager.snap { dx ->
-                                    home_main_poster_recyclerview?.post {
-                                        // this is the best I can do, fuck android for not including instant scroll
-                                        home_main_poster_recyclerview?.smoothScrollBy(dx, 0)
+                                    homeMainPosterRecyclerview.post {
+                                        homeMainPosterRecyclerview.smoothScrollBy(dx, 0)
                                     }
                                 }
                             }
                         }
                     }
                 } else {
-                    items.firstOrNull()?.let {
-                        focusCallback(it)
-                    }
+                    items.firstOrNull()?.let { focusCallback(it) }
                 }
                 toggleMainVisibility(true)
             }
         }
 
-        home_search?.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
+        homeSearch.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
             override fun onQueryTextSubmit(query: String): Boolean {
                 QuickSearchFragment.pushSearch(activity, query, currentApiName?.let { arrayOf(it) })
-
                 return true
             }
-
-            override fun onQueryTextChange(newText: String): Boolean {
-                //searchViewModel.quickSearch(newText)
-                return true
-            }
+            override fun onQueryTextChange(newText: String): Boolean = true
         })
 
         observe(homeViewModel.page) { data ->
             when (data) {
                 is Resource.Success -> {
-                    home_loading_shimmer?.stopShimmer()
-
+                    homeLoadingShimmer.stopShimmer()
                     val d = data.value
                     listHomepageItems.clear()
-
-                    // println("ITEMCOUNT: ${d.values.size} ${home_master_recycler?.adapter?.itemCount}")
-                    (home_master_recycler?.adapter as? ParentItemAdapter?)?.updateList(
-                        d.values.toMutableList(),
-                        home_master_recycler
-                    )
-
-                    home_loading?.isVisible = false
-                    home_loading_error?.isVisible = false
-                    home_loaded?.isVisible = true
-                    if (toggleRandomButton) {
-                        home_random?.isVisible = listHomepageItems.isNotEmpty()
-                    } else {
-                        home_random?.isGone = true
-                    }
+                    (homeMasterRecycler.adapter as? ParentItemAdapter?)?.updateList(d.values.toMutableList(), homeMasterRecycler)
+                    homeLoading.isVisible = false
+                    homeLoadingError.isVisible = false
+                    homeLoaded.isVisible = true
+                    if (toggleRandomButton) homeRandom.isVisible = listHomepageItems.isNotEmpty()
+                    else homeRandom.isGone = true
                 }
                 is Resource.Failure -> {
-                    home_loading_shimmer?.stopShimmer()
-
-                    result_error_text.text = data.errorString
-
-                    home_reload_connectionerror.setOnClickListener(apiChangeClickListener)
-
-                    home_reload_connection_open_in_browser.setOnClickListener { view ->
-                        val validAPIs = apis//.filter { api -> api.hasMainPage }
-
-                        view.popupMenuNoIconsAndNoStringRes(validAPIs.mapIndexed { index, api ->
-                            Pair(
-                                index,
-                                api.name
-                            )
-                        }) {
+                    homeLoadingShimmer.stopShimmer()
+                    resultErrorText.text = data.errorString
+                    homeReloadConnectionerror.setOnClickListener(apiChangeClickListener)
+                    homeReloadConnectionOpenInBrowser.setOnClickListener { view ->
+                        val validAPIs = apis
+                        view.popupMenuNoIconsAndNoStringRes(validAPIs.mapIndexed { index, api -> Pair(index, api.name) }) {
                             try {
-                                val i = Intent(Intent.ACTION_VIEW)
-                                i.data = Uri.parse(validAPIs[itemId].mainUrl)
+                                val i = Intent(Intent.ACTION_VIEW).apply { data = Uri.parse(validAPIs[itemId].mainUrl) }
                                 startActivity(i)
-                            } catch (e: Exception) {
-                                logError(e)
-                            }
+                            } catch (e: Exception) { logError(e) }
                         }
                     }
-
-                    home_loading?.isVisible = false
-                    home_loading_error?.isVisible = true
-                    home_loaded?.isVisible = false
+                    homeLoading.isVisible = false
+                    homeLoadingError.isVisible = true
+                    homeLoaded.isVisible = false
                 }
                 is Resource.Loading -> {
-                    (home_master_recycler?.adapter as? ParentItemAdapter?)?.updateList(listOf())
-                    home_loading_shimmer?.startShimmer()
-                    home_loading?.isVisible = true
-                    home_loading_error?.isVisible = false
-                    home_loaded?.isVisible = false
+                    (homeMasterRecycler.adapter as? ParentItemAdapter?)?.updateList(listOf())
+                    homeLoadingShimmer.startShimmer()
+                    homeLoading.isVisible = true
+                    homeLoadingError.isVisible = false
+                    homeLoaded.isVisible = false
                 }
             }
         }
 
         val toggleList = listOf(
-            Pair(home_type_watching_btt, WatchType.WATCHING),
-            Pair(home_type_completed_btt, WatchType.COMPLETED),
-            Pair(home_type_dropped_btt, WatchType.DROPPED),
-            Pair(home_type_on_hold_btt, WatchType.ONHOLD),
-            Pair(home_plan_to_watch_btt, WatchType.PLANTOWATCH),
+            Pair(homeTypeWatchingBtt, WatchType.WATCHING),
+            Pair(homeTypeCompletedBtt, WatchType.COMPLETED),
+            Pair(homeTypeDroppedBtt, WatchType.DROPPED),
+            Pair(homeTypeOnHoldBtt, WatchType.ONHOLD),
+            Pair(homePlanToWatchBtt, WatchType.PLANTOWATCH),
         )
-
         for (item in toggleList) {
             val watch = item.second
-            item.first?.setOnClickListener {
-                homeViewModel.loadStoredData(EnumSet.of(watch))
-            }
-
-            item.first?.setOnLongClickListener { itemView ->
+            item.first.setOnClickListener { homeViewModel.loadStoredData(EnumSet.of(watch)) }
+            item.first.setOnLongClickListener { itemView ->
                 val list = EnumSet.noneOf(WatchType::class.java)
                 itemView.context.getKey<IntArray>(HOME_BOOKMARK_VALUE_LIST)
-                    ?.map { WatchType.fromInternalId(it) }?.let {
-                        list.addAll(it)
-                    }
-
-                if (list.contains(watch)) {
-                    list.remove(watch)
-                } else {
-                    list.add(watch)
-                }
+                    ?.map { WatchType.fromInternalId(it) }?.let { list.addAll(it) }
+                if (list.contains(watch)) list.remove(watch) else list.add(watch)
                 homeViewModel.loadStoredData(list)
-                return@setOnLongClickListener true
+                true
             }
         }
 
         observe(homeViewModel.availableWatchStatusTypes) { availableWatchStatusTypes ->
-            context?.setKey(
-                HOME_BOOKMARK_VALUE_LIST,
-                availableWatchStatusTypes.first.map { it.internalId }.toIntArray()
-            )
-
+            context?.setKey(HOME_BOOKMARK_VALUE_LIST, availableWatchStatusTypes.first.map { it.internalId }.toIntArray())
             for (item in toggleList) {
                 val watch = item.second
-                item.first?.apply {
+                item.first.apply {
                     isVisible = availableWatchStatusTypes.second.contains(watch)
                     isSelected = availableWatchStatusTypes.first.contains(watch)
                 }
             }
-
-            /*home_bookmark_select?.setOnClickListener {
-                it.popupMenuNoIcons(availableWatchStatusTypes.second.map { type ->
-                    Pair(
-                        type.internalId,
-                        type.stringRes
-                    )
-                }) {
-                    homeViewModel.loadStoredData(it.context, WatchType.fromInternalId(this.itemId))
-                }
-            }
-            home_bookmarked_parent_item_title?.text = getString(availableWatchStatusTypes.first.stringRes)*/
         }
 
         observe(homeViewModel.bookmarks) { (isVis, bookmarks) ->
-            home_bookmarked_holder.isVisible = isVis
-
-            (home_bookmarked_child_recyclerview?.adapter as? HomeChildItemAdapter?)?.updateList(
-                bookmarks
-            )
-
-            home_bookmarked_child_more_info?.setOnClickListener {
+            homeBookmarkedHolder.isVisible = isVis
+            (homeBookmarkedChildRecyclerview.adapter as? HomeChildItemAdapter?)?.updateList(bookmarks)
+            homeBookmarkedChildMoreInfo.setOnClickListener {
                 activity?.loadHomepageList(
-                    HomePageList(
-                        getString(R.string.error_bookmarks_text), //home_bookmarked_parent_item_title?.text?.toString() ?: getString(R.string.error_bookmarks_text),
-                        bookmarks
-                    )
-                ) {
-                    deleteAllBookmarkedData()
-                    homeViewModel.loadStoredData(null)
-                }
+                    HomePageList(getString(R.string.error_bookmarks_text), bookmarks)
+                ) { deleteAllBookmarkedData(); homeViewModel.loadStoredData(null) }
             }
         }
 
         observe(homeViewModel.resumeWatching) { resumeWatching ->
-            home_watch_holder?.isVisible = resumeWatching.isNotEmpty()
-            (home_watch_child_recyclerview?.adapter as? HomeChildItemAdapter?)?.updateList(
-                resumeWatching
-            )
-
-            //if (context?.isTvSettings() == true) {
-            //    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            //        context?.addProgramsToContinueWatching(resumeWatching.mapNotNull { it as? DataStoreHelper.ResumeWatchingResult })
-            //    }
-            //}
-
-            home_watch_child_more_info?.setOnClickListener {
+            homeWatchHolder.isVisible = resumeWatching.isNotEmpty()
+            (homeWatchChildRecyclerview.adapter as? HomeChildItemAdapter?)?.updateList(resumeWatching)
+            homeWatchChildMoreInfo.setOnClickListener {
                 activity?.loadHomepageList(
-                    HomePageList(
-                        home_watch_parent_item_title?.text?.toString()
-                            ?: getString(R.string.continue_watching),
-                        resumeWatching
-                    )
-                ) {
-                    deleteAllResumeStateIds()
-                    homeViewModel.loadResumeWatching()
-                }
+                    HomePageList(homeWatchParentItemTitle.text?.toString() ?: getString(R.string.continue_watching), resumeWatching)
+                ) { deleteAllResumeStateIds(); homeViewModel.loadResumeWatching() }
             }
         }
 
-        home_bookmarked_child_recyclerview.adapter = HomeChildItemAdapter(
+        homeBookmarkedChildRecyclerview.adapter = HomeChildItemAdapter(
             ArrayList(),
-            nextFocusUp = home_bookmarked_child_recyclerview?.nextFocusUpId,
-            nextFocusDown = home_bookmarked_child_recyclerview?.nextFocusDownId
+            nextFocusUp = homeBookmarkedChildRecyclerview.nextFocusUpId,
+            nextFocusDown = homeBookmarkedChildRecyclerview.nextFocusDownId
         ) { callback ->
             if (callback.action == SEARCH_ACTION_SHOW_METADATA) {
                 activity?.showOptionSelectStringRes(
-                    callback.view,
-                    callback.card.posterUrl,
-                    listOf(
-                        R.string.action_open_watching,
-                        R.string.action_remove_from_bookmarks,
-                    ),
-                    listOf(
-                        R.string.action_open_play,
-                        R.string.action_open_watching,
-                        R.string.action_remove_from_bookmarks
-                    )
+                    callback.view, callback.card.posterUrl,
+                    listOf(R.string.action_open_watching, R.string.action_remove_from_bookmarks),
+                    listOf(R.string.action_open_play, R.string.action_open_watching, R.string.action_remove_from_bookmarks)
                 ) { (isTv, actionId) ->
-                    fun play() {
-                        activity.loadSearchResult(callback.card, START_ACTION_RESUME_LATEST)
-                        reloadStored()
-                    }
-
-                    fun remove() {
-                        setResultWatchState(callback.card.id, WatchType.NONE.internalId)
-                        reloadStored()
-                    }
-
-                    fun info() {
-                        handleSearchClickCallback(
-                            activity,
-                            SearchClickCallback(
-                                SEARCH_ACTION_LOAD,
-                                callback.view,
-                                -1,
-                                callback.card
-                            )
-                        )
-                        reloadStored()
-                    }
-
+                    fun play() { activity.loadSearchResult(callback.card, START_ACTION_RESUME_LATEST); reloadStored() }
+                    fun remove() { setResultWatchState(callback.card.id, WatchType.NONE.internalId); reloadStored() }
+                    fun info() { handleSearchClickCallback(activity, SearchClickCallback(SEARCH_ACTION_LOAD, callback.view, -1, callback.card)); reloadStored() }
                     if (isTv) {
-                        when (actionId) {
-                            0 -> {
-                                play()
-                            }
-                            1 -> {
-                                info()
-                            }
-                            2 -> {
-                                remove()
-                            }
-                        }
+                        when (actionId) { 0 -> play(); 1 -> info(); 2 -> remove() }
                     } else {
-                        when (actionId) {
-                            0 -> {
-                                info()
-                            }
-                            1 -> {
-                                remove()
-                            }
-                        }
+                        when (actionId) { 0 -> info(); 1 -> remove() }
                     }
                 }
             } else {
@@ -818,178 +659,96 @@ class HomeFragment : Fragment() {
             }
         }
 
-        home_watch_child_recyclerview?.adapter = HomeChildItemAdapter(
+        homeWatchChildRecyclerview.adapter = HomeChildItemAdapter(
             ArrayList(),
-            nextFocusUp = home_watch_child_recyclerview?.nextFocusUpId,
-            nextFocusDown = home_watch_child_recyclerview?.nextFocusDownId
+            nextFocusUp = homeWatchChildRecyclerview.nextFocusUpId,
+            nextFocusDown = homeWatchChildRecyclerview.nextFocusDownId
         ) { callback ->
             if (callback.action == SEARCH_ACTION_SHOW_METADATA) {
                 activity?.showOptionSelectStringRes(
-                    callback.view,
-                    callback.card.posterUrl,
-                    listOf(
-                        R.string.action_open_watching,
-                        R.string.action_remove_watching
-                    ),
-                    listOf(
-                        R.string.action_open_play,
-                        R.string.action_open_watching,
-                        R.string.action_remove_watching
-                    )
+                    callback.view, callback.card.posterUrl,
+                    listOf(R.string.action_open_watching, R.string.action_remove_watching),
+                    listOf(R.string.action_open_play, R.string.action_open_watching, R.string.action_remove_watching)
                 ) { (isTv, actionId) ->
-                    fun play() {
-                        activity.loadSearchResult(callback.card, START_ACTION_RESUME_LATEST)
-                        reloadStored()
-                    }
-
-                    fun remove() {
-                        val card = callback.card
-                        if (card is DataStoreHelper.ResumeWatchingResult) {
-                            removeLastWatched(card.parentId)
-                            reloadStored()
-                        }
-                    }
-
-                    fun info() {
-                        handleSearchClickCallback(
-                            activity,
-                            SearchClickCallback(
-                                SEARCH_ACTION_LOAD,
-                                callback.view,
-                                -1,
-                                callback.card
-                            )
-                        )
-                        reloadStored()
-                    }
-
+                    fun play() { activity.loadSearchResult(callback.card, START_ACTION_RESUME_LATEST); reloadStored() }
+                    fun remove() { (callback.card as? DataStoreHelper.ResumeWatchingResult)?.let { removeLastWatched(it.parentId); reloadStored() } }
+                    fun info() { handleSearchClickCallback(activity, SearchClickCallback(SEARCH_ACTION_LOAD, callback.view, -1, callback.card)); reloadStored() }
                     if (isTv) {
-                        when (actionId) {
-                            0 -> {
-                                play()
-                            }
-                            1 -> {
-                                info()
-                            }
-                            2 -> {
-                                remove()
-                            }
-                        }
+                        when (actionId) { 0 -> play(); 1 -> info(); 2 -> remove() }
                     } else {
-                        when (actionId) {
-                            0 -> {
-                                info()
-                            }
-                            1 -> {
-                                remove()
-                            }
-                        }
+                        when (actionId) { 0 -> info(); 1 -> remove() }
                     }
-
                 }
             } else {
                 homeHandleSearch(callback)
             }
         }
 
-        context?.fixPaddingStatusbarView(home_statusbar)
-        context?.fixPaddingStatusbar(home_loading_statusbar)
+        context?.fixPaddingStatusbarView(homeStatusbar)
+        context?.fixPaddingStatusbar(homeLoadingStatusbar)
 
-        home_master_recycler.adapter =
-            ParentItemAdapter(mutableListOf(), { callback ->
-                homeHandleSearch(callback)
-            }, { item ->
-                activity?.loadHomepageList(item, expandCallback = {
-                    homeViewModel.expandAndReturn(it)
-                })
-            }, { name ->
-                homeViewModel.expand(name)
-            })
-        home_master_recycler?.setMaxViewPoolSize(0, Int.MAX_VALUE)
-        home_master_recycler.layoutManager = object : LinearLayoutManager(context) {
-            override fun supportsPredictiveItemAnimations(): Boolean {
-                return false
-            }
-        } // GridLayoutManager(context, 1).also { it.supportsPredictiveItemAnimations() }
+        homeMasterRecycler.adapter = ParentItemAdapter(mutableListOf(), { callback -> homeHandleSearch(callback) },
+            { item -> activity?.loadHomepageList(item, expandCallback = { homeViewModel.expandAndReturn(it) }) },
+            { name -> homeViewModel.expand(name) })
+        homeMasterRecycler.setMaxViewPoolSize(0, Int.MAX_VALUE)
+        homeMasterRecycler.layoutManager = object : LinearLayoutManager(context) {
+            override fun supportsPredictiveItemAnimations(): Boolean = false
+        }
 
         if (context?.isTvSettings() == false) {
-            LinearSnapHelper().attachToRecyclerView(home_main_poster_recyclerview) // snap
-            val centerLayoutManager =
-                CenterZoomLayoutManager(context, LinearLayoutManager.HORIZONTAL, false)
+            LinearSnapHelper().attachToRecyclerView(homeMainPosterRecyclerview)
+            val centerLayoutManager = CenterZoomLayoutManager(context, LinearLayoutManager.HORIZONTAL, false)
             centerLayoutManager.setOnSizeListener { index ->
-                (home_main_poster_recyclerview?.adapter as HomeChildItemAdapter?)?.cardList?.get(
-                    index
-                )?.let { random ->
-                    home_main_play?.setOnClickListener {
-                        activity.loadSearchResult(random, START_ACTION_RESUME_LATEST)
-                    }
-                    home_main_info?.setOnClickListener {
-                        activity.loadSearchResult(random)
-                    }
-
-                    home_main_text?.text =
-                        random.name + if (random is AnimeSearchResponse && !random.dubStatus.isNullOrEmpty()) {
-                            random.dubStatus?.joinToString(
-                                prefix = " • ",
-                                separator = " | "
-                            ) { it.name }
-                        } else ""
+                (homeMainPosterRecyclerview.adapter as? HomeChildItemAdapter?)?.cardList?.get(index)?.let { random ->
+                    homeMainPlay.setOnClickListener { activity.loadSearchResult(random, START_ACTION_RESUME_LATEST) }
+                    homeMainInfo.setOnClickListener { activity.loadSearchResult(random) }
+                    homeMainText.text = random.name + if (random is AnimeSearchResponse && !random.dubStatus.isNullOrEmpty()) {
+                        random.dubStatus?.joinToString(prefix = " • ", separator = " | ") { it.name } ?: ""
+                    } else ""
                 }
             }
-            home_main_poster_recyclerview?.layoutManager = centerLayoutManager  // scale
+            homeMainPosterRecyclerview.layoutManager = centerLayoutManager
         }
 
         reloadStored()
         val apiName = context?.getKey<String>(HOMEPAGE_API)
         if (homeViewModel.apiName.value != apiName || apiName == null) {
-            //println("Caught home: " + homeViewModel.apiName.value + " at " + apiName)
             homeViewModel.loadAndCancel(apiName)
         }
 
-        home_loaded.setOnScrollChangeListener(NestedScrollView.OnScrollChangeListener { view, _, scrollY, _, oldScrollY ->
+        homeLoaded.setOnScrollChangeListener(NestedScrollView.OnScrollChangeListener { _, _, scrollY, _, oldScrollY ->
             val dy = scrollY - oldScrollY
-            if (dy > 0) { //check for scroll down
-                home_api_fab?.shrink() // hide
-                home_random?.shrink()
-            } else if (dy < -5) {
-                if (view?.context?.isTvSettings() == false) {
-                    home_api_fab?.extend() // show
-                    home_random?.extend()
-                }
+            if (dy > 0) {
+                homeApiFab.shrink()
+                homeRandom.shrink()
+            } else if (dy < -5 && context?.isTvSettings() == false) {
+                homeApiFab.extend()
+                homeRandom.extend()
             }
         })
 
-        // nice profile pic on homepage
-        home_profile_picture_holder?.isVisible = false
+        homeProfilePictureHolder.isVisible = false
         context?.let { ctx ->
-            // just in case
             if (ctx.isTvSettings()) {
-                home_api_fab?.isVisible = false
-                home_change_api?.isVisible = true
+                homeApiFab.isVisible = false
+                homeChangeApi.isVisible = true
                 if (ctx.isTrueTvSettings()) {
-                    home_change_api_loading?.isVisible = true
-                    home_change_api_loading?.isFocusable = true
-                    home_change_api_loading?.isFocusableInTouchMode = true
-                    home_change_api?.isFocusable = true
-                    home_change_api?.isFocusableInTouchMode = true
+                    homeChangeApiLoading.isVisible = true
+                    homeChangeApiLoading.isFocusable = true
+                    homeChangeApiLoading.isFocusableInTouchMode = true
+                    homeChangeApi.isFocusable = true
+                    homeChangeApi.isFocusableInTouchMode = true
                 }
-                // home_bookmark_select?.isFocusable = true
-                // home_bookmark_select?.isFocusableInTouchMode = true
             } else {
-                home_api_fab?.isVisible = true
-                home_change_api?.isVisible = false
-                home_change_api_loading?.isVisible = false
+                homeApiFab.isVisible = true
+                homeChangeApi.isVisible = false
+                homeChangeApiLoading.isVisible = false
             }
-
             for (syncApi in OAuth2Apis) {
                 val login = syncApi.loginInfo()
                 val pic = login?.profilePicture
-                if (home_profile_picture?.setImage(
-                        pic,
-                        errorImageDrawable = errorProfilePic
-                    ) == true
-                ) {
-                    home_profile_picture_holder?.isVisible = true
+                if (homeProfilePicture.setImage(pic, errorImageDrawable = errorProfilePic)) {
+                    homeProfilePictureHolder.isVisible = true
                     break
                 }
             }
