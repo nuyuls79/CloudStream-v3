@@ -11,7 +11,7 @@ if (allFilesFromDir != null && allFilesFromDir.length > 0) {
 }
 
 android {
-    compileSdk 33  // gunakan 'compileSdk' bukan 'compileSdkVersion' (modern)
+    compileSdk 33
 
     buildFeatures {
         viewBinding true
@@ -20,7 +20,7 @@ android {
     defaultConfig {
         applicationId "foss.jacekun.cloudstream3xxx"
         minSdk 21
-        targetSdk 33  // naikkan dari 28 ke 33 agar sejajar dengan compileSdk
+        targetSdk 33
         multiDexEnabled true
 
         versionCode 1607
@@ -89,7 +89,6 @@ android {
         jvmTarget = "11"
     }
 
-    // Hindari masalah duplicate class dari library yang bentrok
     packagingOptions {
         resources {
             excludes += '/META-INF/{AL2.0,LGPL2.1}'
@@ -101,14 +100,13 @@ kapt {
     correctErrorTypes true
 }
 
-// ========== KONFIGURASI UNTUK MEMAKSA VERSI RHINO ==========
+// Konfigurasi untuk memaksa versi Rhino (menghindari konflik)
 configurations.all {
     resolutionStrategy {
         force 'org.mozilla:rhino:1.7.14'
         exclude group: 'org.mozilla', module: 'rhino'
     }
 }
-// ============================================================
 
 dependencies {
     implementation 'androidx.core:core-ktx:1.9.0'
@@ -166,14 +164,11 @@ dependencies {
 
     coreLibraryDesugaring "com.android.tools:desugar_jdk_libs:1.2.2"
 
-    // ========== TAMBAHAN DEPENDENSI YANG DIPERLUKAN ==========
-    // Nicehttp (library internal CloudStream) - jika tersedia sebagai submodule
-    // Jika tidak, coba dari Maven (ganti versi dengan yang sesuai)
-    // implementation 'com.lagradost:nicehttp:1.0.0'
+    // ===== DEPENDENSI YANG TELAH DIHAPUS =====
+    // khttp tidak tersedia di repository manapun, sudah dihapus.
+    // Jika diperlukan, gunakan OkHttp sebagai pengganti.
 
-    // khttp - untuk permintaan HTTP sederhana (opsional, jika kode masih menggunakannya)
-    implementation 'khttp:khttp:1.0.0'
-
-    // JavaScript engine (Rhino sudah ada, tapi pastikan tidak bentrok)
-    // Tidak perlu tambahan lagi
+    // ===== CATATAN UNTUK NICEHTTP =====
+    // Jika proyek memiliki submodule 'nicehttp', aktifkan baris berikut:
+    // implementation project(':nicehttp')
 }
