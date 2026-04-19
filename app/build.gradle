@@ -104,6 +104,17 @@ kapt {
     correctErrorTypes true
 }
 
+// ========== KONFIGURASI UNTUK MEMAKSA VERSI RHINO ==========
+configurations.all {
+    resolutionStrategy {
+        // Paksa semua dependensi Rhino ke versi 1.7.14
+        force 'org.mozilla:rhino:1.7.14'
+        // Kecualikan versi 1.8.1 yang bermasalah
+        exclude group: 'org.mozilla', module: 'rhino'
+    }
+}
+// ============================================================
+
 dependencies {
 
     implementation 'androidx.core:core-ktx:1.9.0'
