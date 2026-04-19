@@ -13,7 +13,6 @@ import com.lagradost.cloudstream3.utils.AppUtils.getNameFull
 import com.lagradost.cloudstream3.utils.DataStoreHelper.fixVisual
 import com.lagradost.cloudstream3.utils.DataStoreHelper.getViewPos
 import com.lagradost.cloudstream3.utils.VideoDownloadHelper
-import kotlinx.android.synthetic.main.download_child_episode.view.*
 import java.util.*
 
 const val DOWNLOAD_ACTION_PLAY_FILE = 0
@@ -82,9 +81,7 @@ class DownloadChildAdapter(
         }
     }
 
-    override fun getItemCount(): Int {
-        return cardList.size
-    }
+    override fun getItemCount(): Int = cardList.size
 
     class DownloadChildViewHolder
     constructor(
@@ -93,12 +90,13 @@ class DownloadChildAdapter(
     ) : RecyclerView.ViewHolder(itemView), DownloadButtonViewHolder {
         override var downloadButton = EasyDownloadButton()
 
-        private val title: TextView = itemView.download_child_episode_text
-        private val extraInfo: TextView = itemView.download_child_episode_text_extra
-        private val holder: CardView = itemView.download_child_episode_holder
-        private val progressBar: ContentLoadingProgressBar = itemView.download_child_episode_progress
-        private val progressBarDownload: ContentLoadingProgressBar = itemView.download_child_episode_progress_downloaded
-        private val downloadImage: ImageView = itemView.download_child_episode_download
+        // Mengganti synthetic dengan findViewById
+        private val title: TextView = itemView.findViewById(R.id.download_child_episode_text)
+        private val extraInfo: TextView = itemView.findViewById(R.id.download_child_episode_text_extra)
+        private val holder: CardView = itemView.findViewById(R.id.download_child_episode_holder)
+        private val progressBar: ContentLoadingProgressBar = itemView.findViewById(R.id.download_child_episode_progress)
+        private val progressBarDownload: ContentLoadingProgressBar = itemView.findViewById(R.id.download_child_episode_progress_downloaded)
+        private val downloadImage: ImageView = itemView.findViewById(R.id.download_child_episode_download)
 
         private var localCard: VisualDownloadChildCached? = null
 
@@ -117,7 +115,7 @@ class DownloadChildAdapter(
             }
 
             title.text = title.context.getNameFull(d.name, d.episode, d.season)
-            title.isSelected = true // is needed for text repeating
+            title.isSelected = true
 
             downloadButton.setUpButton(
                 card.currentBytes,

@@ -13,7 +13,6 @@ import com.lagradost.cloudstream3.R
 import com.lagradost.cloudstream3.mvvm.logError
 import com.lagradost.cloudstream3.utils.UIHelper.setImage
 import com.lagradost.cloudstream3.utils.VideoDownloadHelper
-import kotlinx.android.synthetic.main.download_header_episode.view.*
 import java.util.*
 
 data class VisualDownloadHeaderCached(
@@ -80,9 +79,7 @@ class DownloadHeaderAdapter(
         }
     }
 
-    override fun getItemCount(): Int {
-        return cardList.size
-    }
+    override fun getItemCount(): Int = cardList.size
 
     class DownloadHeaderViewHolder
     constructor(
@@ -92,14 +89,15 @@ class DownloadHeaderAdapter(
     ) : RecyclerView.ViewHolder(itemView), DownloadButtonViewHolder {
         override var downloadButton = EasyDownloadButton()
 
-        private val poster: ImageView? = itemView.download_header_poster
-        private val title: TextView = itemView.download_header_title
-        private val extraInfo: TextView = itemView.download_header_info
-        private val holder: CardView = itemView.episode_holder
+        // Mengganti synthetic dengan findViewById
+        private val poster: ImageView? = itemView.findViewById(R.id.download_header_poster)
+        private val title: TextView = itemView.findViewById(R.id.download_header_title)
+        private val extraInfo: TextView = itemView.findViewById(R.id.download_header_info)
+        private val holder: CardView = itemView.findViewById(R.id.episode_holder)
 
-        private val downloadBar: ContentLoadingProgressBar = itemView.download_header_progress_downloaded
-        private val downloadImage: ImageView = itemView.download_header_episode_download
-        private val normalImage: ImageView = itemView.download_header_goto_child
+        private val downloadBar: ContentLoadingProgressBar = itemView.findViewById(R.id.download_header_progress_downloaded)
+        private val downloadImage: ImageView = itemView.findViewById(R.id.download_header_episode_download)
+        private val normalImage: ImageView = itemView.findViewById(R.id.download_header_goto_child)
         private var localCard: VisualDownloadHeaderCached? = null
 
         @SuppressLint("SetTextI18n")
@@ -115,20 +113,10 @@ class DownloadHeaderAdapter(
             title.text = d.name
             val mbString = "%.1f".format(card.totalBytes / 1000000f)
 
-            //val isMovie = d.type.isMovieType()
             if (card.child != null) {
                 downloadBar.visibility = View.VISIBLE
                 downloadImage.visibility = View.VISIBLE
                 normalImage.visibility = View.GONE
-                /*setUpButton(
-                    card.currentBytes,
-                    card.totalBytes,
-                    downloadBar,
-                    downloadImage,
-                    extraInfo,
-                    card.child,
-                    movieClickCallback
-                )*/
 
                 holder.setOnClickListener {
                     movieClickCallback.invoke(DownloadClickEvent(DOWNLOAD_ACTION_PLAY_FILE, card.child))
@@ -147,12 +135,10 @@ class DownloadHeaderAdapter(
                             ),
                             mbString
                         )
-                } catch (e : Exception) {
-                    // you probably formatted incorrectly
+                } catch (e: Exception) {
                     extraInfo.text = "Error"
                     logError(e)
                 }
-
 
                 holder.setOnClickListener {
                     clickCallback.invoke(DownloadHeaderClickEvent(0, d))
