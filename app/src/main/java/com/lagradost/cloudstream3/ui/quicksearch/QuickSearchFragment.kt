@@ -35,7 +35,6 @@ import com.lagradost.cloudstream3.utils.UIHelper.fixPaddingStatusbar
 import com.lagradost.cloudstream3.utils.UIHelper.getSpanCount
 import com.lagradost.cloudstream3.utils.UIHelper.navigate
 import com.lagradost.cloudstream3.utils.UIHelper.popCurrentPage
-import kotlinx.android.synthetic.main.quick_search.*
 import java.util.concurrent.locks.ReentrantLock
 
 class QuickSearchFragment : Fragment() {
@@ -70,6 +69,14 @@ class QuickSearchFragment : Fragment() {
 
     private var providers: Set<String>? = null
     private lateinit var searchViewModel: SearchViewModel
+
+    // View references
+    private lateinit var quickSearchRoot: View
+    private lateinit var quickSearchAutofitResults: androidx.recyclerview.widget.RecyclerView
+    private lateinit var quickSearchMasterRecycler: androidx.recyclerview.widget.RecyclerView
+    private lateinit var quickSearch: SearchView
+    private lateinit var quickSearchLoadingBar: View
+    private lateinit var quickSearchBack: View
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -107,7 +114,7 @@ class QuickSearchFragment : Fragment() {
         activity?.getSpanCount()?.let {
             HomeFragment.currentSpan = it
         }
-        quick_search_autofit_results.spanCount = HomeFragment.currentSpan
+        quickSearchAutofitResults.spanCount = HomeFragment.currentSpan
         HomeFragment.currentSpan = HomeFragment.currentSpan
         HomeFragment.configEvent.invoke(HomeFragment.currentSpan)
     }
@@ -119,7 +126,16 @@ class QuickSearchFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        context?.fixPaddingStatusbar(quick_search_root)
+
+        // Initialize views via findViewById
+        quickSearchRoot = view.findViewById(R.id.quick_search_root)
+        quickSearchAutofitResults = view.findViewById(R.id.quick_search_autofit_results)
+        quickSearchMasterRecycler = view.findViewById(R.id.quick_search_master_recycler)
+        quickSearch = view.findViewById(R.id.quick_search)
+        quickSearchLoadingBar = view.findViewById(R.id.quick_search_loading_bar)
+        quickSearchBack = view.findViewById(R.id.quick_search_back)
+
+        context?.fixPaddingStatusbar(quickSearchRoot)
         fixGrid()
 
         arguments?.getStringArray(PROVIDER_KEY)?.let {
@@ -132,50 +148,42 @@ class QuickSearchFragment : Fragment() {
         } else false
 
         if (isSingleProvider) {
-            quick_search_autofit_results.adapter = activity?.let {
+            quickSearchAutofitResults.adapter = activity?.let {
                 SearchAdapter(
                     ArrayList(),
-                    quick_search_autofit_results,
+                    quickSearchAutofitResults,
                 ) { callback ->
                     SearchHelper.handleSearchClickCallback(activity, callback)
                 }
             }
             try {
-                quick_search?.queryHint = getString(R.string.search_hint_site).format(providers?.first())
+                quickSearch.queryHint = getString(R.string.search_hint_site).format(providers?.first())
             } catch (e: Exception) {
                 logError(e)
             }
         } else {
-            quick_search_master_recycler?.adapter =
+            quickSearchMasterRecycler?.adapter =
                 ParentItemAdapter(mutableListOf(), { callback ->
                     SearchHelper.handleSearchClickCallback(activity, callback)
-                    //when (callback.action) {
-                    //SEARCH_ACTION_LOAD -> {
-                    //    clickCallback?.invoke(callback)
-                    //}
-                    //    else -> SearchHelper.handleSearchClickCallback(activity, callback)
-                    //}
                 }, { item ->
                     activity?.loadHomepageList(item)
                 })
-            quick_search_master_recycler?.layoutManager = GridLayoutManager(context, 1)
+            quickSearchMasterRecycler?.layoutManager = GridLayoutManager(context, 1)
         }
 
-        quick_search_autofit_results?.isVisible = isSingleProvider
-        quick_search_master_recycler?.isGone = isSingleProvider
+        quickSearchAutofitResults?.isVisible = isSingleProvider
+        quickSearchMasterRecycler?.isGone = isSingleProvider
 
         val listLock = ReentrantLock()
         observe(searchViewModel.currentSearch) { list ->
             try {
-                // https://stackoverflow.com/questions/6866238/concurrent-modification-exception-adding-to-an-arraylist
                 listLock.lock()
-                (quick_search_master_recycler?.adapter as ParentItemAdapter?)?.apply {
+                (quickSearchMasterRecycler?.adapter as ParentItemAdapter?)?.apply {
                     updateList(list.map { ongoing ->
-                        val ongoingList = HomePageList(
+                        HomePageList(
                             ongoing.apiName,
                             if (ongoing.data is Resource.Success) ongoing.data.value else ArrayList()
                         )
-                        ongoingList
                     })
                 }
             } catch (e: Exception) {
@@ -185,20 +193,12 @@ class QuickSearchFragment : Fragment() {
             }
         }
 
-        val searchExitIcon =
-            quick_search?.findViewById<ImageView>(androidx.appcompat.R.id.search_close_btn)
+        val searchExitIcon = quickSearch.findViewById<ImageView>(androidx.appcompat.R.id.search_close_btn)
 
-        //val searchMagIcon =
-        //    quick_search?.findViewById<ImageView>(androidx.appcompat.R.id.search_mag_icon)
-
-        //searchMagIcon?.scaleX = 0.65f
-        //searchMagIcon?.scaleY = 0.65f
-
-
-        quick_search?.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
+        quickSearch.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
             override fun onQueryTextSubmit(query: String): Boolean {
                 if (search(context, query, false))
-                    UIHelper.hideKeyboard(quick_search)
+                    UIHelper.hideKeyboard(quickSearch)
                 return true
             }
 
@@ -209,46 +209,35 @@ class QuickSearchFragment : Fragment() {
             }
         })
 
-        quick_search_loading_bar.alpha = 0f
+        quickSearchLoadingBar.alpha = 0f
         observe(searchViewModel.searchResponse) {
             when (it) {
                 is Resource.Success -> {
                     it.value.let { data ->
-                        println("DATA: $data")
-                        //Log.i("ApiError", "QuickSearch filterList => ${filteredSearchQuality.toJson()}")
-                        (quick_search_autofit_results?.adapter as? SearchAdapter?)?.updateList(
+                        (quickSearchAutofitResults?.adapter as? SearchAdapter?)?.updateList(
                             context?.filterSearchResultByFilmQuality(data) ?: data
                         )
                     }
                     searchExitIcon?.alpha = 1f
-                    quick_search_loading_bar?.alpha = 0f
+                    quickSearchLoadingBar?.alpha = 0f
                 }
                 is Resource.Failure -> {
-                    // Toast.makeText(activity, "Server error", Toast.LENGTH_LONG).show()
                     searchExitIcon?.alpha = 1f
-                    quick_search_loading_bar?.alpha = 0f
+                    quickSearchLoadingBar?.alpha = 0f
                 }
                 is Resource.Loading -> {
                     searchExitIcon?.alpha = 0f
-                    quick_search_loading_bar?.alpha = 1f
+                    quickSearchLoadingBar?.alpha = 1f
                 }
             }
         }
 
-
-        //quick_search.setOnQueryTextFocusChangeListener { _, b ->
-        //    if (b) {
-        //        // https://stackoverflow.com/questions/12022715/unable-to-show-keyboard-automatically-in-the-searchview
-        //        UIHelper.showInputMethod(view.findFocus())
-        //    }
-        //}
-
-        quick_search_back.setOnClickListener {
+        quickSearchBack.setOnClickListener {
             activity?.popCurrentPage()
         }
 
         arguments?.getString(AUTOSEARCH_KEY)?.let {
-            quick_search?.setQuery(it, true)
+            quickSearch?.setQuery(it, true)
             arguments?.remove(AUTOSEARCH_KEY)
         }
     }
