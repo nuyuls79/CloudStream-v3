@@ -33,6 +33,8 @@ import com.lagradost.cloudstream3.CommonActivity.keyEventListener
 import com.lagradost.cloudstream3.CommonActivity.playerEventListener
 import com.lagradost.cloudstream3.CommonActivity.showToast
 import com.lagradost.cloudstream3.R
+import com.lagradost.cloudstream3.databinding.FragmentPlayerBinding
+import com.lagradost.cloudstream3.databinding.PlayerCustomLayoutBinding
 import com.lagradost.cloudstream3.mvvm.logError
 import com.lagradost.cloudstream3.ui.subtitles.SaveCaptionStyle
 import com.lagradost.cloudstream3.ui.subtitles.SubtitlesFragment
@@ -41,8 +43,6 @@ import com.lagradost.cloudstream3.utils.AppUtils.requestLocalAudioFocus
 import com.lagradost.cloudstream3.utils.UIHelper
 import com.lagradost.cloudstream3.utils.UIHelper.hideSystemUI
 import com.lagradost.cloudstream3.utils.UIHelper.popCurrentPage
-import kotlinx.android.synthetic.main.fragment_player.*
-import kotlinx.android.synthetic.main.player_custom_layout.*
 
 enum class PlayerResize(@StringRes val nameRes: Int) {
     Fit(R.string.resize_fit),
@@ -71,6 +71,12 @@ abstract class AbstractPlayerFragment(
     var isBuffering = true
     protected open var hasPipModeSupport = true
 
+    // View Binding instances
+    private var _fragmentBinding: FragmentPlayerBinding? = null
+    private val fragmentBinding get() = _fragmentBinding!!
+    
+    private var _customLayoutBinding: PlayerCustomLayoutBinding? = null
+    private val customLayoutBinding get() = _customLayoutBinding!!
 
     @LayoutRes
     protected var layout: Int = R.layout.fragment_player
@@ -120,15 +126,15 @@ abstract class AbstractPlayerFragment(
 
         isBuffering = CSPlayerLoading.IsBuffering == isPlaying
         if (isBuffering) {
-            player_pause_play_holder_holder?.isVisible = false
-            player_buffering?.isVisible = true
+            customLayoutBinding.playerPausePlayHolderHolder?.isVisible = false
+            customLayoutBinding.playerBuffering?.isVisible = true
         } else {
-            player_pause_play_holder_holder?.isVisible = true
-            player_buffering?.isVisible = false
+            customLayoutBinding.playerPausePlayHolderHolder?.isVisible = true
+            customLayoutBinding.playerBuffering?.isVisible = false
 
             if (wasPlaying != isPlaying) {
-                player_pause_play?.setImageResource(if (isPlayingRightNow) R.drawable.play_to_pause else R.drawable.pause_to_play)
-                val drawable = player_pause_play?.drawable
+                customLayoutBinding.playerPausePlay?.setImageResource(if (isPlayingRightNow) R.drawable.play_to_pause else R.drawable.pause_to_play)
+                val drawable = customLayoutBinding.playerPausePlay?.drawable
 
                 var startedAnimation = false
                 if (Build.VERSION.SDK_INT > Build.VERSION_CODES.P) {
@@ -150,10 +156,10 @@ abstract class AbstractPlayerFragment(
 
                 // somehow the phone is wacked
                 if (!startedAnimation) {
-                    player_pause_play?.setImageResource(if (isPlayingRightNow) R.drawable.netflix_pause else R.drawable.netflix_play)
+                    customLayoutBinding.playerPausePlay?.setImageResource(if (isPlayingRightNow) R.drawable.netflix_pause else R.drawable.netflix_play)
                 }
             } else {
-                player_pause_play?.setImageResource(if (isPlayingRightNow) R.drawable.netflix_pause else R.drawable.netflix_play)
+                customLayoutBinding.playerPausePlay?.setImageResource(if (isPlayingRightNow) R.drawable.netflix_pause else R.drawable.netflix_play)
             }
         }
 
@@ -171,7 +177,7 @@ abstract class AbstractPlayerFragment(
             isInPIPMode = isInPictureInPictureMode
             if (isInPictureInPictureMode) {
                 // Hide the full-screen UI (controls, etc.) while in picture-in-picture mode.
-                player_holder?.alpha = 0f
+                fragmentBinding.playerHolder?.alpha = 0f
                 pipReceiver = object : BroadcastReceiver() {
                     override fun onReceive(
                         context: Context,
@@ -199,7 +205,7 @@ abstract class AbstractPlayerFragment(
                 updateIsPlaying(Pair(isPlayingValue, isPlayingValue))
             } else {
                 // Restore the full-screen UI.
-                player_holder?.alpha = 1f
+                fragmentBinding.playerHolder?.alpha = 1f
                 exitedPipMode()
                 pipReceiver?.let {
                     activity?.unregisterReceiver(it)
@@ -251,19 +257,31 @@ abstract class AbstractPlayerFragment(
                 val msg = exception.message ?: ""
                 val errorName = exception.errorCodeName
                 when (val code = exception.errorCode) {
-                    PlaybackException.ERROR_CODE_IO_FILE_NOT_FOUND, PlaybackException.ERROR_CODE_PARSING_CONTAINER_UNSUPPORTED, PlaybackException.ERROR_CODE_IO_NO_PERMISSION, PlaybackException.ERROR_CODE_IO_UNSPECIFIED -> {
+                    PlaybackException.ERROR_CODE_IO_FILE_NOT_FOUND, 
+                    PlaybackException.ERROR_CODE_PARSING_CONTAINER_UNSUPPORTED, 
+                    PlaybackException.ERROR_CODE_IO_NO_PERMISSION, 
+                    PlaybackException.ERROR_CODE_IO_UNSPECIFIED -> {
                         showToast(
                             "${ctx.getString(R.string.source_error)}\n$errorName ($code)\n$msg",
                             gotoNext = true
                         )
                     }
-                    PlaybackException.ERROR_CODE_REMOTE_ERROR, PlaybackException.ERROR_CODE_IO_BAD_HTTP_STATUS, PlaybackException.ERROR_CODE_TIMEOUT, PlaybackException.ERROR_CODE_IO_NETWORK_CONNECTION_FAILED, PlaybackException.ERROR_CODE_IO_INVALID_HTTP_CONTENT_TYPE -> {
+                    PlaybackException.ERROR_CODE_REMOTE_ERROR, 
+                    PlaybackException.ERROR_CODE_IO_BAD_HTTP_STATUS, 
+                    PlaybackException.ERROR_CODE_TIMEOUT, 
+                    PlaybackException.ERROR_CODE_IO_NETWORK_CONNECTION_FAILED, 
+                    PlaybackException.ERROR_CODE_IO_INVALID_HTTP_CONTENT_TYPE -> {
                         showToast(
                             "${ctx.getString(R.string.remote_error)}\n$errorName ($code)\n$msg",
                             gotoNext = true
                         )
                     }
-                    PlaybackException.ERROR_CODE_DECODING_FAILED, PlaybackErrorEvent.ERROR_AUDIO_TRACK_INIT_FAILED, PlaybackErrorEvent.ERROR_AUDIO_TRACK_OTHER, PlaybackException.ERROR_CODE_AUDIO_TRACK_WRITE_FAILED, PlaybackException.ERROR_CODE_DECODER_INIT_FAILED, PlaybackException.ERROR_CODE_DECODER_QUERY_FAILED -> {
+                    PlaybackException.ERROR_CODE_DECODING_FAILED, 
+                    PlaybackErrorEvent.ERROR_AUDIO_TRACK_INIT_FAILED, 
+                    PlaybackErrorEvent.ERROR_AUDIO_TRACK_OTHER, 
+                    PlaybackException.ERROR_CODE_AUDIO_TRACK_WRITE_FAILED, 
+                    PlaybackException.ERROR_CODE_DECODER_INIT_FAILED, 
+                    PlaybackException.ERROR_CODE_DECODER_QUERY_FAILED -> {
                         showToast(
                             "${ctx.getString(R.string.render_error)}\n$errorName ($code)\n$msg",
                             gotoNext = true
@@ -305,8 +323,6 @@ abstract class AbstractPlayerFragment(
             context?.let { ctx ->
                 val mediaButtonReceiver = ComponentName(ctx, MediaButtonReceiver::class.java)
                 MediaSessionCompat(ctx, "Player", mediaButtonReceiver, null).let { media ->
-                    //media.setCallback(mMediaSessionCallback)
-                    //media.setFlags(MediaSessionCompat.FLAG_HANDLES_MEDIA_BUTTONS or MediaSessionCompat.FLAG_HANDLES_TRANSPORT_CONTROLS)
                     val mediaSessionConnector = MediaSessionConnector(media)
                     mediaSessionConnector.setPlayer(player)
                     media.isActive = true
@@ -315,39 +331,19 @@ abstract class AbstractPlayerFragment(
             }
 
             // Necessary for multiple combined videos
-            player_view?.setShowMultiWindowTimeBar(true)
-            player_view?.player = player
-            player_view?.performClick()
+            fragmentBinding.playerView?.setShowMultiWindowTimeBar(true)
+            fragmentBinding.playerView?.player = player
+            fragmentBinding.playerView?.performClick()
         }
     }
 
     private var mediaSessionConnector: MediaSessionConnector? = null
     private var mMediaSessionCompat: MediaSessionCompat? = null
 
-    // this can be used in the future for players other than exoplayer
-    //private val mMediaSessionCallback: MediaSessionCompat.Callback = object : MediaSessionCompat.Callback() {
-    //    override fun onMediaButtonEvent(mediaButtonEvent: Intent): Boolean {
-    //        val keyEvent = mediaButtonEvent.getParcelableExtra(Intent.EXTRA_KEY_EVENT) as KeyEvent?
-    //        if (keyEvent != null) {
-    //            if (keyEvent.action == KeyEvent.ACTION_DOWN) { // NO DOUBLE SKIP
-    //                val consumed = when (keyEvent.keyCode) {
-    //                    KeyEvent.KEYCODE_MEDIA_PAUSE -> callOnPause()
-    //                    KeyEvent.KEYCODE_MEDIA_PLAY -> callOnPlay()
-    //                    KeyEvent.KEYCODE_MEDIA_STOP -> callOnStop()
-    //                    KeyEvent.KEYCODE_MEDIA_NEXT -> callOnNext()
-    //                    else -> false
-    //                }
-    //                if (consumed) return true
-    //            }
-    //        }
-    //
-    //        return super.onMediaButtonEvent(mediaButtonEvent)
-    //    }
-    //}
-
-
     @SuppressLint("SetTextI18n")
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        
         resizeMode = getKey(RESIZE_MODE_KEY) ?: 0
         resize(resizeMode, false)
 
@@ -372,17 +368,15 @@ abstract class AbstractPlayerFragment(
         )
 
         if (player is CS3IPlayer) {
-            subView = player_view?.findViewById(R.id.exo_subtitles)
+            subView = fragmentBinding.playerView?.findViewById(R.id.exo_subtitles)
             subStyle = SubtitlesFragment.getCurrentSavedStyle()
-            player.initSubtitles(subView, subtitle_holder, subStyle)
+            player.initSubtitles(subView, customLayoutBinding.subtitleHolder, subStyle)
 
             SubtitlesFragment.applyStyleEvent += ::onSubStyleChanged
 
             try {
                 context?.let { ctx ->
-                    val settingsManager = PreferenceManager.getDefaultSharedPreferences(
-                        ctx
-                    )
+                    val settingsManager = PreferenceManager.getDefaultSharedPreferences(ctx)
 
                     val currentPrefCacheSize =
                         settingsManager.getInt(getString(R.string.video_buffer_size_key), 0)
@@ -399,21 +393,6 @@ abstract class AbstractPlayerFragment(
                 logError(e)
             }
         }
-
-        /*context?.let { ctx ->
-            player.loadPlayer(
-                ctx,
-                false,
-                ExtractorLink(
-                    "idk",
-                    "bunny",
-                    "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
-                    "",
-                    Qualities.P720.value,
-                    false
-                ),
-            )
-        }*/
     }
 
     override fun onDestroy() {
@@ -442,7 +421,7 @@ abstract class AbstractPlayerFragment(
             PlayerResize.Fit -> AspectRatioFrameLayout.RESIZE_MODE_FIT
             PlayerResize.Zoom -> AspectRatioFrameLayout.RESIZE_MODE_ZOOM
         }
-        player_view?.resizeMode = type
+        fragmentBinding.playerView?.resizeMode = type
 
         if (showToast)
             showToast(activity, resize.nameRes, Toast.LENGTH_SHORT)
@@ -457,7 +436,6 @@ abstract class AbstractPlayerFragment(
         context?.let { ctx ->
             player.onResume(ctx)
         }
-
         super.onResume()
     }
 
@@ -466,6 +444,15 @@ abstract class AbstractPlayerFragment(
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
-        return inflater.inflate(layout, container, false)
+        _fragmentBinding = FragmentPlayerBinding.inflate(inflater, container, false)
+        // Inflate player_custom_layout and add to the appropriate container
+        _customLayoutBinding = PlayerCustomLayoutBinding.inflate(inflater, _fragmentBinding?.playerHolder, true)
+        return _fragmentBinding?.root
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        _fragmentBinding = null
+        _customLayoutBinding = null
     }
 }

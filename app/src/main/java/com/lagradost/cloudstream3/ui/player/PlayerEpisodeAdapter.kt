@@ -13,16 +13,15 @@ import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.button.MaterialButton
 import com.lagradost.cloudstream3.R
+import com.lagradost.cloudstream3.databinding.PlayerEpisodesBinding
+import com.lagradost.cloudstream3.databinding.PlayerEpisodesLargeBinding
+import com.lagradost.cloudstream3.databinding.PlayerEpisodesSmallBinding
+import com.lagradost.cloudstream3.databinding.ResultEpisodeLargeBinding
 import com.lagradost.cloudstream3.ui.result.ResultEpisode
 import com.lagradost.cloudstream3.ui.result.getDisplayPosition
 import com.lagradost.cloudstream3.ui.settings.SettingsFragment.Companion.isTrueTvSettings
 import com.lagradost.cloudstream3.utils.AppUtils.html
 import com.lagradost.cloudstream3.utils.UIHelper.setImage
-import kotlinx.android.synthetic.main.player_episodes_large.view.episode_holder_large
-import kotlinx.android.synthetic.main.player_episodes_large.view.episode_progress
-import kotlinx.android.synthetic.main.player_episodes_small.view.episode_holder
-import kotlinx.android.synthetic.main.result_episode_large.view.*
-
 
 data class PlayerEpisodeClickEvent(val action: Int, val data: Any)
 
@@ -32,11 +31,8 @@ class PlayerEpisodeAdapter(
 ) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
-        return PlayerEpisodeCardViewHolder(
-            LayoutInflater.from(parent.context)
-                .inflate(R.layout.player_episodes, parent, false),
-            clickCallback,
-        )
+        val binding = PlayerEpisodesBinding.inflate(LayoutInflater.from(parent.context), parent, false)
+        return PlayerEpisodeCardViewHolder(binding, clickCallback)
     }
 
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
@@ -64,70 +60,90 @@ class PlayerEpisodeAdapter(
 
     class PlayerEpisodeCardViewHolder
     constructor(
-        itemView: View,
+        private val binding: PlayerEpisodesBinding,
         private val clickCallback: (PlayerEpisodeClickEvent) -> Unit,
-    ) : RecyclerView.ViewHolder(itemView) {
+    ) : RecyclerView.ViewHolder(binding.root) {
+
         @SuppressLint("SetTextI18n")
         fun bind(card: Any) {
             if (card is ResultEpisode) {
-                val (parentView, otherView) = if (card.poster == null) {
-                    itemView.episode_holder to itemView.episode_holder_large
+                // Determine which layout to use based on whether poster exists
+                val isLargeLayout = card.poster != null
+                
+                // Get the appropriate binding for the selected layout
+                val largeBinding = if (isLargeLayout) {
+                    PlayerEpisodesLargeBinding.bind(binding.root.findViewById(R.id.episode_holder_large))
+                } else null
+                
+                val smallBinding = if (!isLargeLayout) {
+                    PlayerEpisodesSmallBinding.bind(binding.root.findViewById(R.id.episode_holder))
+                } else null
+
+                // Show/hide appropriate layouts
+                if (isLargeLayout) {
+                    binding.episodeHolderLarge?.isVisible = true
+                    binding.episodeHolder?.isVisible = false
                 } else {
-                    itemView.episode_holder_large to itemView.episode_holder
+                    binding.episodeHolderLarge?.isVisible = false
+                    binding.episodeHolder?.isVisible = true
                 }
 
-                val episodeText: TextView? = parentView.episode_text
-                val episodeFiller: MaterialButton? = parentView.episode_filler
-                val episodeRating: TextView? = parentView.episode_rating
-                val episodeDescript: TextView? = parentView.episode_descript
-                val episodeProgress: ContentLoadingProgressBar? = parentView.episode_progress
-                val episodePoster: ImageView? = parentView.episode_poster
+                val activeBinding = if (isLargeLayout) largeBinding else smallBinding
+                val rootView = if (isLargeLayout) binding.episodeHolderLarge else binding.episodeHolder
 
-                parentView.isVisible = true
-                otherView.isVisible = false
+                if (activeBinding == null || rootView == null) return
 
-
-                episodeText?.apply {
-                    val name =
-                        if (card.name == null) "${context.getString(R.string.episode)} ${card.episode}" else "${card.episode}. ${card.name}"
-
+                // Episode text
+                activeBinding.episodeText?.apply {
+                    val name = if (card.name == null) {
+                        "${context.getString(R.string.episode)} ${card.episode}"
+                    } else {
+                        "${card.episode}. ${card.name}"
+                    }
                     text = name
                     isSelected = true
                 }
 
-                episodeFiller?.isVisible = card.isFiller == true
+                // Filler indicator
+                activeBinding.episodeFiller?.isVisible = card.isFiller == true
 
+                // Progress bar
                 val displayPos = card.getDisplayPosition()
-                episodeProgress?.max = (card.duration / 1000).toInt()
-                episodeProgress?.progress = (displayPos / 1000).toInt()
-                episodeProgress?.isVisible =  displayPos > 0L
-                episodePoster?.isVisible = episodePoster?.setImage(card.poster) == true
+                activeBinding.episodeProgress?.max = (card.duration / 1000).toInt()
+                activeBinding.episodeProgress?.progress = (displayPos / 1000).toInt()
+                activeBinding.episodeProgress?.isVisible = displayPos > 0L
 
+                // Poster image (only for large layout)
+                if (isLargeLayout && largeBinding != null) {
+                    largeBinding.episodePoster?.isVisible = largeBinding.episodePoster?.setImage(card.poster) == true
+                }
+
+                // Rating
                 if (card.rating != null) {
-                    episodeRating?.text = episodeRating?.context?.getString(R.string.rated_format)
+                    activeBinding.episodeRating?.text = activeBinding.episodeRating?.context
+                        ?.getString(R.string.rated_format)
                         ?.format(card.rating.toFloat() / 10f)
                 } else {
-                    episodeRating?.text = ""
+                    activeBinding.episodeRating?.text = ""
                 }
+                activeBinding.episodeRating?.isGone = activeBinding.episodeRating?.text.isNullOrBlank()
 
-                episodeRating?.isGone = episodeRating?.text.isNullOrBlank()
-
-                episodeDescript?.apply {
+                // Description
+                activeBinding.episodeDescript?.apply {
                     text = card.description.html()
                     isGone = text.isNullOrBlank()
-                    //setOnClickListener {
-                    //    clickCallback.invoke(PlayerEpisodeClickEvent(ACTION_SHOW_DESCRIPTION, card))
-                    //}
                 }
 
-                parentView.setOnClickListener {
+                // Click listener
+                rootView.setOnClickListener {
                     clickCallback.invoke(PlayerEpisodeClickEvent(0, card))
                 }
 
-                if (parentView.context.isTrueTvSettings()) {
-                    parentView.isFocusable = true
-                    parentView.isFocusableInTouchMode = true
-                    parentView.touchscreenBlocksFocus = false
+                // TV mode focus handling
+                if (rootView.context.isTrueTvSettings()) {
+                    rootView.isFocusable = true
+                    rootView.isFocusableInTouchMode = true
+                    rootView.touchscreenBlocksFocus = false
                 }
             }
         }
@@ -137,8 +153,7 @@ class PlayerEpisodeAdapter(
 class EpisodeDiffCallback(
     private val oldList: List<Any>,
     private val newList: List<Any>
-) :
-    DiffUtil.Callback() {
+) : DiffUtil.Callback() {
     override fun areItemsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean {
         val a = oldList[oldItemPosition]
         val b = newList[newItemPosition]
@@ -150,9 +165,7 @@ class EpisodeDiffCallback(
     }
 
     override fun getOldListSize() = oldList.size
-
     override fun getNewListSize() = newList.size
-
     override fun areContentsTheSame(oldItemPosition: Int, newItemPosition: Int) =
         oldList[oldItemPosition] == newList[newItemPosition]
 }
