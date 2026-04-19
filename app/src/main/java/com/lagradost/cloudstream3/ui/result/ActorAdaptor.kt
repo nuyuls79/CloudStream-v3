@@ -12,9 +12,8 @@ import com.lagradost.cloudstream3.ActorData
 import com.lagradost.cloudstream3.ActorRole
 import com.lagradost.cloudstream3.R
 import com.lagradost.cloudstream3.utils.UIHelper.setImage
-import kotlinx.android.synthetic.main.cast_item.view.*
 
-class ActorAdaptor() : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
+class ActorAdaptor : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
     data class ActorMetaData(
         var isInverted: Boolean,
         val actor: ActorData,
@@ -39,18 +38,14 @@ class ActorAdaptor() : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
         }
     }
 
-    override fun getItemCount(): Int {
-        return actors.size
-    }
+    override fun getItemCount(): Int = actors.size
 
     private fun updateActorList(newList: List<ActorMetaData>) {
         val diffResult = DiffUtil.calculateDiff(
             ActorDiffCallback(this.actors, newList)
         )
-
         actors.clear()
         actors.addAll(newList)
-
         diffResult.dispatchUpdatesTo(this)
     }
 
@@ -69,14 +64,14 @@ class ActorAdaptor() : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
     private class CardViewHolder
     constructor(
         itemView: View,
-    ) :
-        RecyclerView.ViewHolder(itemView) {
-        private val actorImage: ImageView = itemView.actor_image
-        private val actorName: TextView = itemView.actor_name
-        private val actorExtra: TextView = itemView.actor_extra
-        private val voiceActorImage: ImageView = itemView.voice_actor_image
-        private val voiceActorImageHolder: View = itemView.voice_actor_image_holder
-        private val voiceActorName: TextView = itemView.voice_actor_name
+    ) : RecyclerView.ViewHolder(itemView) {
+        // Replace synthetic view references with findViewById
+        private val actorImage: ImageView = itemView.findViewById(R.id.actor_image)
+        private val actorName: TextView = itemView.findViewById(R.id.actor_name)
+        private val actorExtra: TextView = itemView.findViewById(R.id.actor_extra)
+        private val voiceActorImage: ImageView = itemView.findViewById(R.id.voice_actor_image)
+        private val voiceActorImageHolder: View = itemView.findViewById(R.id.voice_actor_image_holder)
+        private val voiceActorName: TextView = itemView.findViewById(R.id.voice_actor_name)
 
         fun bind(actor: ActorData, isInverted: Boolean, position: Int, callback: (Int) -> Unit) {
             val (mainImg, vaImage) = if (!isInverted || actor.voiceActor?.image.isNullOrBlank()) {
@@ -95,15 +90,9 @@ class ActorAdaptor() : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
             actor.role?.let {
                 actorExtra.context?.getString(
                     when (it) {
-                        ActorRole.Main -> {
-                            R.string.actor_main
-                        }
-                        ActorRole.Supporting -> {
-                            R.string.actor_supporting
-                        }
-                        ActorRole.Background -> {
-                            R.string.actor_background
-                        }
+                        ActorRole.Main -> R.string.actor_main
+                        ActorRole.Supporting -> R.string.actor_supporting
+                        ActorRole.Background -> R.string.actor_background
                     }
                 )?.let { text ->
                     actorExtra.isVisible = true
@@ -130,15 +119,12 @@ class ActorAdaptor() : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 class ActorDiffCallback(
     private val oldList: List<ActorAdaptor.ActorMetaData>,
     private val newList: List<ActorAdaptor.ActorMetaData>
-) :
-    DiffUtil.Callback() {
+) : DiffUtil.Callback() {
     override fun areItemsTheSame(oldItemPosition: Int, newItemPosition: Int) =
         oldList[oldItemPosition].actor.actor.name == newList[newItemPosition].actor.actor.name
 
     override fun getOldListSize() = oldList.size
-
     override fun getNewListSize() = newList.size
-
     override fun areContentsTheSame(oldItemPosition: Int, newItemPosition: Int) =
         oldList[oldItemPosition] == newList[newItemPosition]
 }

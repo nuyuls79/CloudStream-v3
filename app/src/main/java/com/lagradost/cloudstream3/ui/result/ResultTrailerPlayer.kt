@@ -7,15 +7,12 @@ import android.os.Bundle
 import android.view.View
 import android.view.ViewGroup
 import android.widget.FrameLayout
+import android.widget.ImageView
 import androidx.core.view.isVisible
 import com.discord.panels.PanelsChildGestureRegionObserver
 import com.lagradost.cloudstream3.R
 import com.lagradost.cloudstream3.ui.player.SubtitleData
 import com.lagradost.cloudstream3.utils.IOnBackPressed
-import kotlinx.android.synthetic.main.fragment_result.*
-import kotlinx.android.synthetic.main.fragment_result_swipe.*
-import kotlinx.android.synthetic.main.fragment_trailer.*
-import kotlinx.android.synthetic.main.trailer_custom_layout.*
 
 open class ResultTrailerPlayer : com.lagradost.cloudstream3.ui.player.FullScreenPlayer(),
     PanelsChildGestureRegionObserver.GestureRegionsListener, IOnBackPressed {
@@ -54,17 +51,17 @@ open class ResultTrailerPlayer : com.lagradost.cloudstream3.ui.player.FullScreen
                 screenHeight
             }
 
-            result_trailer_loading?.isVisible = false
-            result_smallscreen_holder?.isVisible = !isFullScreenPlayer
-            result_fullscreen_holder?.isVisible = isFullScreenPlayer
+            requireView().findViewById<View>(R.id.result_trailer_loading)?.isVisible = false
+            requireView().findViewById<View>(R.id.result_smallscreen_holder)?.isVisible = !isFullScreenPlayer
+            requireView().findViewById<View>(R.id.result_fullscreen_holder)?.isVisible = isFullScreenPlayer
 
-            player_background?.apply {
+            val playerBackground = requireView().findViewById<FrameLayout>(R.id.player_background)
+            playerBackground?.apply {
                 isVisible = true
-                layoutParams =
-                    FrameLayout.LayoutParams(
-                        FrameLayout.LayoutParams.MATCH_PARENT,
-                        if (isFullScreenPlayer) FrameLayout.LayoutParams.MATCH_PARENT else sw * h / w
-                    )
+                layoutParams = FrameLayout.LayoutParams(
+                    FrameLayout.LayoutParams.MATCH_PARENT,
+                    if (isFullScreenPlayer) FrameLayout.LayoutParams.MATCH_PARENT else sw * h / w
+                )
             }
         }
     }
@@ -88,23 +85,26 @@ open class ResultTrailerPlayer : com.lagradost.cloudstream3.ui.player.FullScreen
     private fun updateFullscreen(fullscreen: Boolean) {
         isFullScreenPlayer = fullscreen
         lockRotation = fullscreen
-        player_fullscreen?.setImageResource(if (fullscreen) R.drawable.baseline_fullscreen_exit_24 else R.drawable.baseline_fullscreen_24)
+        val fullscreenBtn = requireView().findViewById<ImageView>(R.id.player_fullscreen)
+        fullscreenBtn?.setImageResource(if (fullscreen) R.drawable.baseline_fullscreen_exit_24 else R.drawable.baseline_fullscreen_24)
         if (fullscreen) {
             enterFullscreen()
-            result_top_bar?.isVisible = false
-            result_fullscreen_holder?.isVisible = true
-            result_main_holder?.isVisible = false
-            player_background?.let { view ->
-                (view.parent as ViewGroup?)?.removeView(view)
-                result_fullscreen_holder?.addView(view)
+            requireView().findViewById<View>(R.id.result_top_bar)?.isVisible = false
+            requireView().findViewById<View>(R.id.result_fullscreen_holder)?.isVisible = true
+            requireView().findViewById<View>(R.id.result_main_holder)?.isVisible = false
+            val playerBackground = requireView().findViewById<FrameLayout>(R.id.player_background)
+            playerBackground?.let { view ->
+                (view.parent as? ViewGroup)?.removeView(view)
+                requireView().findViewById<ViewGroup>(R.id.result_fullscreen_holder)?.addView(view)
             }
         } else {
-            result_top_bar?.isVisible = true
-            result_fullscreen_holder?.isVisible = false
-            result_main_holder?.isVisible = true
-            player_background?.let { view ->
-                (view.parent as ViewGroup?)?.removeView(view)
-                result_smallscreen_holder?.addView(view)
+            requireView().findViewById<View>(R.id.result_top_bar)?.isVisible = true
+            requireView().findViewById<View>(R.id.result_fullscreen_holder)?.isVisible = false
+            requireView().findViewById<View>(R.id.result_main_holder)?.isVisible = true
+            val playerBackground = requireView().findViewById<FrameLayout>(R.id.player_background)
+            playerBackground?.let { view ->
+                (view.parent as? ViewGroup)?.removeView(view)
+                requireView().findViewById<ViewGroup>(R.id.result_smallscreen_holder)?.addView(view)
             }
             exitFullscreen()
         }
@@ -114,7 +114,8 @@ open class ResultTrailerPlayer : com.lagradost.cloudstream3.ui.player.FullScreen
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        player_fullscreen?.setOnClickListener {
+        val fullscreenBtn = requireView().findViewById<ImageView>(R.id.player_fullscreen)
+        fullscreenBtn?.setOnClickListener {
             updateFullscreen(!isFullScreenPlayer)
         }
         updateFullscreen(isFullScreenPlayer)
