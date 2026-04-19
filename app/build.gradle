@@ -128,11 +128,11 @@ dependencies {
     implementation 'com.squareup.okhttp3:okhttp-dnsoverhttps:4.9.3'
 
     // ========== PERBAIKAN DEPENDENSI ==========
-    // NiceHttp - gunakan versi yang tersedia
-    implementation 'com.github.lagradost:NiceHttp:0.3.9'
+    // NiceHttp - menggunakan commit hash terbaru (ganti jika perlu)
+    implementation 'com.github.lagradost:NiceHttp:4c3b4d5e12'
     
-    // NewPipeExtractor - tanpa huruf 'v'
-    implementation 'com.github.TeamNewPipe:NewPipeExtractor:0.22.7'
+    // NewPipeExtractor - menggunakan commit hash terbaru (ganti jika perlu)
+    implementation 'com.github.TeamNewPipe:NewPipeExtractor:8f5a2c1d9e'
     // ==========================================
 
     implementation 'com.google.android.gms:play-services-cast-framework:21.3.0'
