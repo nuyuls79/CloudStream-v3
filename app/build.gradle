@@ -123,17 +123,17 @@ dependencies {
 
     implementation 'org.jsoup:jsoup:1.15.3'
 
+    // ========== PERBAIKAN DEPENDENSI ==========
+    // 1. NiceHttp sudah tidak aktif, digantikan dengan OkHttp yang sudah ada di proyek.
+    //    (Hapus baris implementation 'com.github.lagradost:NiceHttp:...' yang lama)
+    
+    // 2. NewPipeExtractor - Gunakan versi terbaru yang tersedia di JitPack (v0.26.0)
+    implementation 'com.github.teamnewpipe:NewPipeExtractor:v0.26.0'
+    // ==========================================
+
     implementation 'com.squareup.okhttp3:okhttp:4.9.3'
     implementation 'com.squareup.okhttp3:logging-interceptor:4.9.3'
     implementation 'com.squareup.okhttp3:okhttp-dnsoverhttps:4.9.3'
-
-    // ========== PERBAIKAN DEPENDENSI ==========
-    // NiceHttp - menggunakan commit hash terbaru (ganti jika perlu)
-    implementation 'com.github.lagradost:NiceHttp:4c3b4d5e12'
-    
-    // NewPipeExtractor - menggunakan commit hash terbaru (ganti jika perlu)
-    implementation 'com.github.TeamNewPipe:NewPipeExtractor:8f5a2c1d9e'
-    // ==========================================
 
     implementation 'com.google.android.gms:play-services-cast-framework:21.3.0'
 
