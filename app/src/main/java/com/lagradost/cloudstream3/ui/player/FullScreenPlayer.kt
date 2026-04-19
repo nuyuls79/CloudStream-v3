@@ -37,6 +37,8 @@ import com.lagradost.cloudstream3.AcraApplication.Companion.setKey
 import com.lagradost.cloudstream3.CommonActivity.keyEventListener
 import com.lagradost.cloudstream3.CommonActivity.playerEventListener
 import com.lagradost.cloudstream3.R
+import com.lagradost.cloudstream3.databinding.PlayerCustomLayoutBinding
+import com.lagradost.cloudstream3.databinding.TrailerCustomLayoutBinding
 import com.lagradost.cloudstream3.mvvm.logError
 import com.lagradost.cloudstream3.ui.player.GeneratorPlayer.Companion.subsProvidersIsActive
 import com.lagradost.cloudstream3.utils.Qualities
@@ -50,64 +52,38 @@ import com.lagradost.cloudstream3.utils.UIHelper.popCurrentPage
 import com.lagradost.cloudstream3.utils.UIHelper.showSystemUI
 import com.lagradost.cloudstream3.utils.UIHelper.toPx
 import com.lagradost.cloudstream3.utils.Vector2
-import kotlinx.android.synthetic.main.player_custom_layout.*
-import kotlinx.android.synthetic.main.player_custom_layout.bottom_player_bar
-import kotlinx.android.synthetic.main.player_custom_layout.exo_ffwd
-import kotlinx.android.synthetic.main.player_custom_layout.exo_ffwd_text
-import kotlinx.android.synthetic.main.player_custom_layout.exo_progress
-import kotlinx.android.synthetic.main.player_custom_layout.exo_rew
-import kotlinx.android.synthetic.main.player_custom_layout.exo_rew_text
-import kotlinx.android.synthetic.main.player_custom_layout.player_center_menu
-import kotlinx.android.synthetic.main.player_custom_layout.player_ffwd_holder
-import kotlinx.android.synthetic.main.player_custom_layout.player_holder
-import kotlinx.android.synthetic.main.player_custom_layout.player_pause_play
-import kotlinx.android.synthetic.main.player_custom_layout.player_pause_play_holder
-import kotlinx.android.synthetic.main.player_custom_layout.player_progressbar_left
-import kotlinx.android.synthetic.main.player_custom_layout.player_progressbar_left_holder
-import kotlinx.android.synthetic.main.player_custom_layout.player_progressbar_left_icon
-import kotlinx.android.synthetic.main.player_custom_layout.player_progressbar_right
-import kotlinx.android.synthetic.main.player_custom_layout.player_progressbar_right_holder
-import kotlinx.android.synthetic.main.player_custom_layout.player_progressbar_right_icon
-import kotlinx.android.synthetic.main.player_custom_layout.player_rew_holder
-import kotlinx.android.synthetic.main.player_custom_layout.player_time_text
-import kotlinx.android.synthetic.main.player_custom_layout.player_video_bar
-import kotlinx.android.synthetic.main.player_custom_layout.shadow_overlay
-import kotlinx.android.synthetic.main.trailer_custom_layout.*
 import kotlin.math.*
 
-const val MINIMUM_SEEK_TIME = 7000L         // when swipe seeking
-const val MINIMUM_VERTICAL_SWIPE = 2.0f     // in percentage
-const val MINIMUM_HORIZONTAL_SWIPE = 2.0f   // in percentage
+const val MINIMUM_SEEK_TIME = 7000L
+const val MINIMUM_VERTICAL_SWIPE = 2.0f
+const val MINIMUM_HORIZONTAL_SWIPE = 2.0f
 const val VERTICAL_MULTIPLIER = 2.0f
 const val HORIZONTAL_MULTIPLIER = 2.0f
 const val DOUBLE_TAB_MAXIMUM_HOLD_TIME = 200L
-const val DOUBLE_TAB_MINIMUM_TIME_BETWEEN = 200L    // this also affects the UI show response time
-const val DOUBLE_TAB_PAUSE_PERCENTAGE = 0.15        // in both directions
+const val DOUBLE_TAB_MINIMUM_TIME_BETWEEN = 200L
+const val DOUBLE_TAB_PAUSE_PERCENTAGE = 0.15
 
-// All the UI Logic for the player
 open class FullScreenPlayer : AbstractPlayerFragment() {
     protected open var lockRotation = true
     protected open var isFullScreenPlayer = true
     protected open var isTv = false
 
-    // state of player UI
+    // View Binding
+    protected var customLayoutBinding: PlayerCustomLayoutBinding? = null
+    protected var trailerBinding: TrailerCustomLayoutBinding? = null
+
     protected var isShowing = false
     protected var isLocked = false
 
-    //private var episodes: List<Any> = listOf()
     protected fun setEpisodes(ep: List<Any>) {
-        //hasEpisodes = ep.size > 1 // if has 2 episodes or more because you dont want to switch to your current episode
-        //(player_episode_list?.adapter as? PlayerEpisodeAdapter?)?.updateList(ep)
+        // hasEpisodes = ep.size > 1
+        // (player_episode_list?.adapter as? PlayerEpisodeAdapter?)?.updateList(ep)
     }
 
     protected var hasEpisodes = false
         private set
-    //protected val hasEpisodes
-    //    get() = episodes.isNotEmpty()
 
-    // options for player
-    protected var currentPrefQuality =
-        Qualities.P2160.value // preferred maximum quality, used for ppl w bad internet or on cell
+    protected var currentPrefQuality = Qualities.P2160.value
     protected var fastForwardTime = 10000L
     protected var swipeHorizontalEnabled = false
     protected var swipeVerticalEnabled = false
@@ -129,41 +105,22 @@ open class FullScreenPlayer : AbstractPlayerFragment() {
             0L
         }
 
-    //private var useSystemBrightness = false
     protected var useTrueSystemBrightness = true
-    private val fullscreenNotch = true //TODO SETTING
+    private val fullscreenNotch = true
 
     protected val displayMetrics: DisplayMetrics = Resources.getSystem().displayMetrics
 
-    // screenWidth and screenHeight does always
-    // refer to the screen while in landscape mode
     protected val screenWidth: Int
-        get() {
-            return max(displayMetrics.widthPixels, displayMetrics.heightPixels)
-        }
+        get() = max(displayMetrics.widthPixels, displayMetrics.heightPixels)
     protected val screenHeight: Int
-        get() {
-            return min(displayMetrics.widthPixels, displayMetrics.heightPixels)
-        }
+        get() = min(displayMetrics.widthPixels, displayMetrics.heightPixels)
 
     private var statusBarHeight: Int? = null
     private var navigationBarHeight: Int? = null
 
     private val brightnessIcons = listOf(
-        R.drawable.sun_1,
-        R.drawable.sun_2,
-        R.drawable.sun_3,
-        R.drawable.sun_4,
-        R.drawable.sun_5,
-        R.drawable.sun_6,
-        //R.drawable.sun_7,
-        // R.drawable.ic_baseline_brightness_1_24,
-        // R.drawable.ic_baseline_brightness_2_24,
-        // R.drawable.ic_baseline_brightness_3_24,
-        // R.drawable.ic_baseline_brightness_4_24,
-        // R.drawable.ic_baseline_brightness_5_24,
-        // R.drawable.ic_baseline_brightness_6_24,
-        // R.drawable.ic_baseline_brightness_7_24,
+        R.drawable.sun_1, R.drawable.sun_2, R.drawable.sun_3,
+        R.drawable.sun_4, R.drawable.sun_5, R.drawable.sun_6
     )
 
     private val volumeIcons = listOf(
@@ -184,12 +141,9 @@ open class FullScreenPlayer : AbstractPlayerFragment() {
         throw NotImplementedError()
     }
 
-    /** Returns false if the touch is on the status bar or navigation bar*/
     private fun isValidTouch(rawX: Float, rawY: Float): Boolean {
         val statusHeight = statusBarHeight ?: 0
-        // val navHeight = navigationBarHeight ?: 0
-        // nav height is removed because screenWidth already takes into account that
-        return rawY > statusHeight && rawX < screenWidth //- navHeight
+        return rawY > statusHeight && rawX < screenWidth
     }
 
     override fun exitedPipMode() {
@@ -197,27 +151,29 @@ open class FullScreenPlayer : AbstractPlayerFragment() {
     }
 
     protected fun animateLayoutChanges() {
+        val binding = customLayoutBinding ?: return
+
         if (isShowing) {
             updateUIVisibility()
         } else {
-            player_holder?.postDelayed({ updateUIVisibility() }, 200)
+            binding.playerHolder?.postDelayed({ updateUIVisibility() }, 200)
         }
 
         val titleMove = if (isShowing) 0f else -50.toPx.toFloat()
-        player_video_title?.let {
+        fragmentBinding?.playerVideoTitle?.let {
             ObjectAnimator.ofFloat(it, "translationY", titleMove).apply {
                 duration = 200
                 start()
             }
         }
-        player_video_title_rez?.let {
+        fragmentBinding?.playerVideoTitleRez?.let {
             ObjectAnimator.ofFloat(it, "translationY", titleMove).apply {
                 duration = 200
                 start()
             }
         }
         val playerBarMove = if (isShowing) 0f else 50.toPx.toFloat()
-        bottom_player_bar?.let {
+        binding.bottomPlayerBar?.let {
             ObjectAnimator.ofFloat(it, "translationY", playerBarMove).apply {
                 duration = 200
                 start()
@@ -225,16 +181,15 @@ open class FullScreenPlayer : AbstractPlayerFragment() {
         }
 
         val fadeTo = if (isShowing) 1f else 0f
-        val fadeAnimation = AlphaAnimation(1f - fadeTo, fadeTo)
-
-        fadeAnimation.duration = 100
-        fadeAnimation.fillAfter = true
+        val fadeAnimation = AlphaAnimation(1f - fadeTo, fadeTo).apply {
+            duration = 100
+            fillAfter = true
+        }
 
         val sView = subView
         val sStyle = subStyle
         if (sView != null && sStyle != null) {
-            val move = if (isShowing) -((bottom_player_bar?.height?.toFloat()
-                ?: 0f) + 40.toPx) else -sStyle.elevation.toPx.toFloat()
+            val move = if (isShowing) -((binding.bottomPlayerBar?.height?.toFloat() ?: 0f) + 40.toPx) else -sStyle.elevation.toPx.toFloat()
             ObjectAnimator.ofFloat(sView, "translationY", move).apply {
                 duration = 200
                 start()
@@ -242,42 +197,30 @@ open class FullScreenPlayer : AbstractPlayerFragment() {
         }
 
         val playerSourceMove = if (isShowing) 0f else -50.toPx.toFloat()
-        player_open_source?.let {
+        fragmentBinding?.playerOpenSource?.let {
             ObjectAnimator.ofFloat(it, "translationY", playerSourceMove).apply {
                 duration = 200
                 start()
             }
         }
 
-
         if (!isLocked) {
-            player_ffwd_holder?.alpha = 1f
-            player_rew_holder?.alpha = 1f
-            // player_pause_play_holder?.alpha = 1f
-            shadow_overlay?.isVisible = true
-            shadow_overlay?.startAnimation(fadeAnimation)
-            player_ffwd_holder?.startAnimation(fadeAnimation)
-            player_rew_holder?.startAnimation(fadeAnimation)
-            player_pause_play?.startAnimation(fadeAnimation)
-
-            /*if (isBuffering) {
-                    player_pause_play?.isVisible = false
-                    player_pause_play_holder?.isVisible = false
-                } else {
-                    player_pause_play?.isVisible = true
-                    player_pause_play_holder?.startAnimation(fadeAnimation)
-                    player_pause_play?.startAnimation(fadeAnimation)
-                }*/
-            //player_buffering?.startAnimation(fadeAnimation)
+            binding.playerFfwdHolder?.alpha = 1f
+            binding.playerRewHolder?.alpha = 1f
+            binding.shadowOverlay?.isVisible = true
+            binding.shadowOverlay?.startAnimation(fadeAnimation)
+            binding.playerFfwdHolder?.startAnimation(fadeAnimation)
+            binding.playerRewHolder?.startAnimation(fadeAnimation)
+            binding.playerPausePlay?.startAnimation(fadeAnimation)
         }
 
-        bottom_player_bar?.startAnimation(fadeAnimation)
-        player_open_source?.startAnimation(fadeAnimation)
-        player_top_holder?.startAnimation(fadeAnimation)
+        binding.bottomPlayerBar?.startAnimation(fadeAnimation)
+        fragmentBinding?.playerOpenSource?.startAnimation(fadeAnimation)
+        fragmentBinding?.playerTopHolder?.startAnimation(fadeAnimation)
     }
 
     override fun subtitlesChanged() {
-        player_subtitle_offset_btt?.isGone = player.getCurrentPreferredSubtitle() == null
+        customLayoutBinding?.playerSubtitleOffsetBtt?.isGone = player.getCurrentPreferredSubtitle() == null
     }
 
     protected fun enterFullscreen() {
@@ -295,15 +238,11 @@ open class FullScreenPlayer : AbstractPlayerFragment() {
 
     protected fun exitFullscreen() {
         activity?.showSystemUI()
-        //if (lockRotation)
         activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_USER
-
-        // simply resets brightness and notch settings that might have been overridden
         val lp = activity?.window?.attributes
         lp?.screenBrightness = WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-            lp?.layoutInDisplayCutoutMode =
-                WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_DEFAULT
+            lp?.layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_DEFAULT
         }
         activity?.window?.attributes = lp
     }
@@ -323,26 +262,22 @@ open class FullScreenPlayer : AbstractPlayerFragment() {
     private fun setPlayBackSpeed(speed: Float) {
         try {
             setKey(PLAYBACK_SPEED_KEY, speed)
-            player_speed_btt?.text =
-                getString(R.string.player_speed_text_format).format(speed)
-                    .replace(".0x", "x")
+            customLayoutBinding?.playerSpeedBtt?.text =
+                getString(R.string.player_speed_text_format).format(speed).replace(".0x", "x")
         } catch (e: Exception) {
-            // the format string was wrong
             logError(e)
         }
-
         player.setPlaybackSpeed(speed)
     }
 
     private fun skipOp() {
-        player.seekTime(85000) // skip 85s
+        player.seekTime(85000)
     }
 
     private fun showSubtitleOffsetDialog() {
         context?.let { ctx ->
-            val builder =
-                AlertDialog.Builder(ctx, R.style.AlertDialogCustom)
-                    .setView(R.layout.subtitle_offset)
+            val builder = AlertDialog.Builder(ctx, R.style.AlertDialogCustom)
+                .setView(R.layout.subtitle_offset)
             val dialog = builder.create()
             dialog.show()
 
@@ -361,23 +296,11 @@ open class FullScreenPlayer : AbstractPlayerFragment() {
                 text?.toString()?.toLongOrNull()?.let {
                     subtitleDelay = it
                     when {
-                        it > 0L -> {
-                            context?.getString(R.string.subtitle_offset_extra_hint_later_format)
-                                ?.format(it)
-                        }
-                        it < 0L -> {
-                            context?.getString(R.string.subtitle_offset_extra_hint_before_format)
-                                ?.format(-it)
-                        }
-                        it == 0L -> {
-                            context?.getString(R.string.subtitle_offset_extra_hint_none_format)
-                        }
-                        else -> {
-                            null
-                        }
-                    }?.let { str ->
-                        subTitle.text = str
-                    }
+                        it > 0L -> context?.getString(R.string.subtitle_offset_extra_hint_later_format)?.format(it)
+                        it < 0L -> context?.getString(R.string.subtitle_offset_extra_hint_before_format)?.format(-it)
+                        it == 0L -> context?.getString(R.string.subtitle_offset_extra_hint_none_format)
+                        else -> null
+                    }?.let { str -> subTitle.text = str }
                 }
             }
             input.text = Editable.Factory.getInstance()?.newEditable(beforeOffset.toString())
@@ -390,22 +313,13 @@ open class FullScreenPlayer : AbstractPlayerFragment() {
                 input.text = Editable.Factory.getInstance()?.newEditable(current.toString())
             }
 
-            add.setOnClickListener {
-                changeBy(buttonChange)
-            }
-            addMore.setOnClickListener {
-                changeBy(buttonChangeMore)
-            }
-            sub.setOnClickListener {
-                changeBy(-buttonChange)
-            }
-            subMore.setOnClickListener {
-                changeBy(-buttonChangeMore)
-            }
+            add.setOnClickListener { changeBy(buttonChange) }
+            addMore.setOnClickListener { changeBy(buttonChangeMore) }
+            sub.setOnClickListener { changeBy(-buttonChange) }
+            subMore.setOnClickListener { changeBy(-buttonChangeMore) }
 
             dialog.setOnDismissListener {
-                if (isFullScreenPlayer)
-                    activity?.hideSystemUI()
+                if (isFullScreenPlayer) activity?.hideSystemUI()
             }
             applyButton.setOnClickListener {
                 dialog.dismissSafe(activity)
@@ -419,74 +333,52 @@ open class FullScreenPlayer : AbstractPlayerFragment() {
     }
 
     private fun showSpeedDialog() {
-        val speedsText =
-            listOf(
-                "0.5x",
-                "0.75x",
-                "0.85x",
-                "1x",
-                "1.15x",
-                "1.25x",
-                "1.4x",
-                "1.5x",
-                "1.75x",
-                "2x"
-            )
-        val speedsNumbers =
-            listOf(0.5f, 0.75f, 0.85f, 1f, 1.15f, 1.25f, 1.4f, 1.5f, 1.75f, 2f)
+        val speedsText = listOf("0.5x", "0.75x", "0.85x", "1x", "1.15x", "1.25x", "1.4x", "1.5x", "1.75x", "2x")
+        val speedsNumbers = listOf(0.5f, 0.75f, 0.85f, 1f, 1.15f, 1.25f, 1.4f, 1.5f, 1.75f, 2f)
         val speedIndex = speedsNumbers.indexOf(player.getPlaybackSpeed())
 
         activity?.let { act ->
             act.showDialog(
-                speedsText,
-                speedIndex,
-                act.getString(R.string.player_speed),
-                false,
-                {
-                    if (isFullScreenPlayer)
-                        activity?.hideSystemUI()
-                }) { index ->
-                if (isFullScreenPlayer)
-                    activity?.hideSystemUI()
+                speedsText, speedIndex, act.getString(R.string.player_speed), false,
+                { if (isFullScreenPlayer) activity?.hideSystemUI() }
+            ) { index ->
+                if (isFullScreenPlayer) activity?.hideSystemUI()
                 setPlayBackSpeed(speedsNumbers[index])
             }
         }
     }
 
     fun resetRewindText() {
-        exo_rew_text?.text =
-            getString(R.string.rew_text_regular_format).format(fastForwardTime / 1000)
+        customLayoutBinding?.exoRewText?.text = getString(R.string.rew_text_regular_format).format(fastForwardTime / 1000)
     }
 
     fun resetFastForwardText() {
-        exo_ffwd_text?.text =
-            getString(R.string.ffw_text_regular_format).format(fastForwardTime / 1000)
+        customLayoutBinding?.exoFfwdText?.text = getString(R.string.ffw_text_regular_format).format(fastForwardTime / 1000)
     }
 
     private fun rewind() {
+        val binding = customLayoutBinding ?: return
         try {
-            player_center_menu?.isGone = false
-            player_rew_holder?.alpha = 1f
+            fragmentBinding?.playerCenterMenu?.isGone = false
+            binding.playerRewHolder?.alpha = 1f
 
             val rotateLeft = AnimationUtils.loadAnimation(context, R.anim.rotate_left)
-            exo_rew?.startAnimation(rotateLeft)
+            binding.exoRew?.startAnimation(rotateLeft)
 
             val goLeft = AnimationUtils.loadAnimation(context, R.anim.go_left)
             goLeft.setAnimationListener(object : Animation.AnimationListener {
                 override fun onAnimationStart(animation: Animation?) {}
-
                 override fun onAnimationRepeat(animation: Animation?) {}
-
                 override fun onAnimationEnd(animation: Animation?) {
-                    exo_rew_text?.post {
+                    binding.exoRewText?.post {
                         resetRewindText()
-                        player_center_menu?.isGone = !isShowing
-                        player_rew_holder?.alpha = if (isShowing) 1f else 0f
+                        fragmentBinding?.playerCenterMenu?.isGone = !isShowing
+                        binding.playerRewHolder?.alpha = if (isShowing) 1f else 0f
                     }
                 }
             })
-            exo_rew_text?.startAnimation(goLeft)
-            exo_rew_text?.text = getString(R.string.rew_text_format).format(fastForwardTime / 1000)
+            binding.exoRewText?.startAnimation(goLeft)
+            binding.exoRewText?.text = getString(R.string.rew_text_format).format(fastForwardTime / 1000)
             player.seekTime(-fastForwardTime)
         } catch (e: Exception) {
             logError(e)
@@ -494,29 +386,28 @@ open class FullScreenPlayer : AbstractPlayerFragment() {
     }
 
     private fun fastForward() {
+        val binding = customLayoutBinding ?: return
         try {
-            player_center_menu?.isGone = false
-            player_ffwd_holder?.alpha = 1f
+            fragmentBinding?.playerCenterMenu?.isGone = false
+            binding.playerFfwdHolder?.alpha = 1f
 
             val rotateRight = AnimationUtils.loadAnimation(context, R.anim.rotate_right)
-            exo_ffwd?.startAnimation(rotateRight)
+            binding.exoFfwd?.startAnimation(rotateRight)
 
             val goRight = AnimationUtils.loadAnimation(context, R.anim.go_right)
             goRight.setAnimationListener(object : Animation.AnimationListener {
                 override fun onAnimationStart(animation: Animation?) {}
-
                 override fun onAnimationRepeat(animation: Animation?) {}
-
                 override fun onAnimationEnd(animation: Animation?) {
-                    exo_ffwd_text?.post {
+                    binding.exoFfwdText?.post {
                         resetFastForwardText()
-                        player_center_menu?.isGone = !isShowing
-                        player_ffwd_holder?.alpha = if (isShowing) 1f else 0f
+                        fragmentBinding?.playerCenterMenu?.isGone = !isShowing
+                        binding.playerFfwdHolder?.alpha = if (isShowing) 1f else 0f
                     }
                 }
             })
-            exo_ffwd_text?.startAnimation(goRight)
-            exo_ffwd_text?.text = getString(R.string.ffw_text_format).format(fastForwardTime / 1000)
+            binding.exoFfwdText?.startAnimation(goRight)
+            binding.exoFfwdText?.text = getString(R.string.ffw_text_format).format(fastForwardTime / 1000)
             player.seekTime(fastForwardTime)
         } catch (e: Exception) {
             logError(e)
@@ -526,23 +417,24 @@ open class FullScreenPlayer : AbstractPlayerFragment() {
     private fun onClickChange() {
         isShowing = !isShowing
         if (isShowing) {
-            player_intro_play?.isGone = true
+            customLayoutBinding?.playerIntroPlay?.isGone = true
             autoHide()
         }
-        if (isFullScreenPlayer)
-            activity?.hideSystemUI()
+        if (isFullScreenPlayer) activity?.hideSystemUI()
         animateLayoutChanges()
-        player_pause_play?.requestFocus()
+        customLayoutBinding?.playerPausePlay?.requestFocus()
     }
 
     private fun toggleLock() {
+        val binding = customLayoutBinding ?: return
+
         if (!isShowing) {
             onClickChange()
         }
 
         isLocked = !isLocked
         if (isLocked && isShowing) {
-            player_holder?.postDelayed({
+            binding.playerHolder?.postDelayed({
                 if (isLocked && isShowing) {
                     onClickChange()
                 }
@@ -550,40 +442,30 @@ open class FullScreenPlayer : AbstractPlayerFragment() {
         }
 
         val fadeTo = if (isLocked) 0f else 1f
-
-        val fadeAnimation = AlphaAnimation(player_video_title.alpha, fadeTo).apply {
+        val fadeAnimation = AlphaAnimation(fragmentBinding?.playerVideoTitle?.alpha ?: 1f, fadeTo).apply {
             duration = 100
             fillAfter = true
         }
 
         updateUIVisibility()
-        // MENUS
-        //centerMenu.startAnimation(fadeAnimation)
-        player_pause_play?.startAnimation(fadeAnimation)
-        player_ffwd_holder?.startAnimation(fadeAnimation)
-        player_rew_holder?.startAnimation(fadeAnimation)
+        binding.playerPausePlay?.startAnimation(fadeAnimation)
+        binding.playerFfwdHolder?.startAnimation(fadeAnimation)
+        binding.playerRewHolder?.startAnimation(fadeAnimation)
 
-        //if (hasEpisodes)
-        //    player_episodes_button?.startAnimation(fadeAnimation)
-        //player_media_route_button?.startAnimation(fadeAnimation)
-        //video_bar.startAnimation(fadeAnimation)
+        fragmentBinding?.playerVideoTitleRez?.startAnimation(fadeAnimation)
+        fragmentBinding?.playerEpisodeFiller?.startAnimation(fadeAnimation)
+        fragmentBinding?.playerVideoTitle?.startAnimation(fadeAnimation)
+        fragmentBinding?.playerTopHolder?.startAnimation(fadeAnimation)
 
-        //TITLE
-        player_video_title_rez?.startAnimation(fadeAnimation)
-        player_episode_filler?.startAnimation(fadeAnimation)
-        player_video_title?.startAnimation(fadeAnimation)
-        player_top_holder?.startAnimation(fadeAnimation)
-        // BOTTOM
-        player_lock_holder?.startAnimation(fadeAnimation)
-        //player_go_back_holder?.startAnimation(fadeAnimation)
-
-        shadow_overlay?.isVisible = true
-        shadow_overlay?.startAnimation(fadeAnimation)
+        binding.playerLockHolder?.startAnimation(fadeAnimation)
+        binding.shadowOverlay?.isVisible = true
+        binding.shadowOverlay?.startAnimation(fadeAnimation)
 
         updateLockUI()
     }
 
     private fun updateUIVisibility() {
+        val binding = customLayoutBinding ?: return
         val isGone = isLocked || !isShowing
         var togglePlayerTitleGone = isGone
         context?.let {
@@ -593,32 +475,28 @@ open class FullScreenPlayer : AbstractPlayerFragment() {
                 togglePlayerTitleGone = true
             }
         }
-        player_lock_holder?.isGone = isGone
-        player_video_bar?.isGone = isGone
-        player_pause_play_holder?.isGone = isGone
-        player_pause_play?.isGone = isGone
-        //player_buffering?.isGone = isGone
-        player_top_holder?.isGone = isGone
-        //player_episodes_button?.isVisible = !isGone && hasEpisodes
-        player_video_title?.isGone = togglePlayerTitleGone
-        player_video_title_rez?.isGone = isGone
-        player_episode_filler?.isGone = isGone
-        player_center_menu?.isGone = isGone
-        player_lock?.isGone = !isShowing
-        //player_media_route_button?.isClickable = !isGone
-        player_go_back_holder?.isGone = isGone
+        binding.playerLockHolder?.isGone = isGone
+        fragmentBinding?.playerVideoBar?.isGone = isGone
+        binding.playerPausePlayHolder?.isGone = isGone
+        binding.playerPausePlay?.isGone = isGone
+        fragmentBinding?.playerTopHolder?.isGone = isGone
+        fragmentBinding?.playerVideoTitle?.isGone = togglePlayerTitleGone
+        fragmentBinding?.playerVideoTitleRez?.isGone = isGone
+        fragmentBinding?.playerEpisodeFiller?.isGone = isGone
+        fragmentBinding?.playerCenterMenu?.isGone = isGone
+        binding.playerLock?.isGone = !isShowing
+        fragmentBinding?.playerGoBackHolder?.isGone = isGone
     }
 
     private fun updateLockUI() {
-        player_lock?.setIconResource(if (isLocked) R.drawable.video_locked else R.drawable.video_unlocked)
+        val binding = customLayoutBinding ?: return
+        binding.playerLock?.setIconResource(if (isLocked) R.drawable.video_locked else R.drawable.video_unlocked)
         if (layout == R.layout.fragment_player) {
-            val color = if (isLocked) context?.colorFromAttribute(R.attr.colorPrimary)
-            else Color.WHITE
+            val color = if (isLocked) context?.colorFromAttribute(R.attr.colorPrimary) else Color.WHITE
             if (color != null) {
-                player_lock?.setTextColor(color)
-                player_lock?.iconTint = ColorStateList.valueOf(color)
-                player_lock?.rippleColor =
-                    ColorStateList.valueOf(Color.argb(50, color.red, color.green, color.blue))
+                binding.playerLock?.setTextColor(color)
+                binding.playerLock?.iconTint = ColorStateList.valueOf(color)
+                binding.playerLock?.rippleColor = ColorStateList.valueOf(Color.argb(50, color.red, color.green, color.blue))
             }
         }
     }
@@ -627,19 +505,18 @@ open class FullScreenPlayer : AbstractPlayerFragment() {
     protected fun autoHide() {
         currentTapIndex++
         val index = currentTapIndex
-        player_holder?.postDelayed({
+        customLayoutBinding?.playerHolder?.postDelayed({
             if (!isCurrentTouchValid && isShowing && index == currentTapIndex && player.getIsPlaying()) {
                 onClickChange()
             }
         }, 2000)
     }
 
-    // this is used because you don't want to hide UI when double tap seeking
     private var currentDoubleTapIndex = 0
     private fun toggleShowDelayed() {
         if (doubleTapEnabled || doubleTapPauseEnabled) {
             val index = currentDoubleTapIndex
-            player_holder?.postDelayed({
+            customLayoutBinding?.playerHolder?.postDelayed({
                 if (index == currentDoubleTapIndex) {
                     onClickChange()
                 }
@@ -654,33 +531,22 @@ open class FullScreenPlayer : AbstractPlayerFragment() {
     private var currentTouchLast: Vector2? = null
     private var currentTouchAction: TouchAction? = null
     private var currentLastTouchAction: TouchAction? = null
-    private var currentTouchStartPlayerTime: Long? =
-        null // the time in the player when you first click
-    private var currentTouchStartTime: Long? = null // the system time when you first click
-    private var currentLastTouchEndTime: Long = 0 // the system time when you released your finger
-    private var currentClickCount: Int =
-        0 // amount of times you have double clicked, will reset when other action is taken
+    private var currentTouchStartPlayerTime: Long? = null
+    private var currentTouchStartTime: Long? = null
+    private var currentLastTouchEndTime: Long = 0
+    private var currentClickCount: Int = 0
 
-    // requested volume and brightness is used to make swiping smoother
-    // to make it not jump between values,
-    // this value is within the range [0,1]
     private var currentRequestedVolume: Float = 0.0f
     private var currentRequestedBrightness: Float = 1.0f
 
     enum class TouchAction {
-        Brightness,
-        Volume,
-        Time,
+        Brightness, Volume, Time
     }
 
     companion object {
         private fun forceLetters(inp: Long, letters: Int = 2): String {
-            val added: Int = letters - inp.toString().length
-            return if (added > 0) {
-                "0".repeat(added) + inp.toString()
-            } else {
-                inp.toString()
-            }
+            val added = letters - inp.toString().length
+            return if (added > 0) "0".repeat(added) + inp.toString() else inp.toString()
         }
 
         private fun convertTimeToString(sec: Long): String {
@@ -688,44 +554,24 @@ open class FullScreenPlayer : AbstractPlayerFragment() {
             val min = ceil((sec - rsec) / 60.0).toInt()
             val rmin = min % 60L
             val h = ceil((min - rmin) / 60.0).toLong()
-            //int rh = h;// h % 24;
-            return (if (h > 0) forceLetters(h) + ":" else "") + (if (rmin >= 0 || h >= 0) forceLetters(
-                rmin
-            ) + ":" else "") + forceLetters(
-                rsec
-            )
+            return (if (h > 0) forceLetters(h) + ":" else "") + (if (rmin >= 0 || h >= 0) forceLetters(rmin) + ":" else "") + forceLetters(rsec)
         }
     }
 
-    private fun calculateNewTime(
-        startTime: Long?,
-        touchStart: Vector2?,
-        touchEnd: Vector2?
-    ): Long? {
+    private fun calculateNewTime(startTime: Long?, touchStart: Vector2?, touchEnd: Vector2?): Long? {
         if (touchStart == null || touchEnd == null || startTime == null) return null
         val diffX = (touchEnd.x - touchStart.x) * HORIZONTAL_MULTIPLIER / screenWidth.toFloat()
         val duration = player.getDuration() ?: return null
-        return max(
-            min(
-                startTime + ((duration * (diffX * diffX)) * (if (diffX < 0) -1 else 1)).toLong(),
-                duration
-            ), 0
-        )
+        return max(min(startTime + ((duration * (diffX * diffX)) * (if (diffX < 0) -1 else 1)).toLong(), duration), 0)
     }
 
     private fun getBrightness(): Float? {
         return if (useTrueSystemBrightness) {
             try {
-                Settings.System.getInt(
-                    context?.contentResolver,
-                    Settings.System.SCREEN_BRIGHTNESS
-                ) / 255f
+                Settings.System.getInt(context?.contentResolver, Settings.System.SCREEN_BRIGHTNESS) / 255f
             } catch (e: Exception) {
-                // because true system brightness requires
-                // permission, this is a lazy way to check
-                // as it will throw an error if we do not have it
                 useTrueSystemBrightness = false
-                return getBrightness()
+                getBrightness()
             }
         } else {
             try {
@@ -740,16 +586,8 @@ open class FullScreenPlayer : AbstractPlayerFragment() {
     private fun setBrightness(brightness: Float) {
         if (useTrueSystemBrightness) {
             try {
-                Settings.System.putInt(
-                    context?.contentResolver,
-                    Settings.System.SCREEN_BRIGHTNESS_MODE,
-                    Settings.System.SCREEN_BRIGHTNESS_MODE_MANUAL
-                )
-
-                Settings.System.putInt(
-                    context?.contentResolver,
-                    Settings.System.SCREEN_BRIGHTNESS, (brightness * 255).toInt()
-                )
+                Settings.System.putInt(context?.contentResolver, Settings.System.SCREEN_BRIGHTNESS_MODE, Settings.System.SCREEN_BRIGHTNESS_MODE_MANUAL)
+                Settings.System.putInt(context?.contentResolver, Settings.System.SCREEN_BRIGHTNESS, (brightness * 255).toInt())
             } catch (e: Exception) {
                 useTrueSystemBrightness = false
                 setBrightness(brightness)
@@ -767,38 +605,30 @@ open class FullScreenPlayer : AbstractPlayerFragment() {
 
     @SuppressLint("SetTextI18n")
     private fun handleMotionEvent(view: View?, event: MotionEvent?): Boolean {
+        val binding = customLayoutBinding ?: return false
         if (event == null || view == null) return false
         val currentTouch = Vector2(event.x, event.y)
         val startTouch = currentTouchStart
-        player_intro_play?.isGone = true
+        binding.playerIntroPlay?.isGone = true
         when (event.action) {
             MotionEvent.ACTION_DOWN -> {
-                // validates if the touch is inside of the player area
                 isCurrentTouchValid = isValidTouch(currentTouch.x, currentTouch.y)
-                /*if (isCurrentTouchValid && player_episode_list?.isVisible == true) {
-                    player_episode_list?.isVisible = false
-                } else*/ if (isCurrentTouchValid) {
+                if (isCurrentTouchValid) {
                     currentTouchStartTime = System.currentTimeMillis()
                     currentTouchStart = currentTouch
                     currentTouchLast = currentTouch
                     currentTouchStartPlayerTime = player.getPosition()
 
-                    getBrightness()?.let {
-                        currentRequestedBrightness = it
-                    }
+                    getBrightness()?.let { currentRequestedBrightness = it }
                     (activity?.getSystemService(Context.AUDIO_SERVICE) as? AudioManager)?.let { audioManager ->
-                        val currentVolume =
-                            audioManager.getStreamVolume(AudioManager.STREAM_MUSIC)
-                        val maxVolume =
-                            audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
-
+                        val currentVolume = audioManager.getStreamVolume(AudioManager.STREAM_MUSIC)
+                        val maxVolume = audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
                         currentRequestedVolume = currentVolume.toFloat() / maxVolume.toFloat()
                     }
                 }
             }
             MotionEvent.ACTION_UP -> {
                 if (isCurrentTouchValid && !isLocked && isFullScreenPlayer) {
-                    // seek time
                     if (swipeHorizontalEnabled && currentTouchAction == TouchAction.Time) {
                         val startTime = currentTouchStartPlayerTime
                         if (startTime != null) {
@@ -811,57 +641,36 @@ open class FullScreenPlayer : AbstractPlayerFragment() {
                     }
                 }
 
-                // see if click is eligible for seek 10s
                 val holdTime = currentTouchStartTime?.minus(System.currentTimeMillis())
-                if (isCurrentTouchValid // is valid
-                    && currentTouchAction == null // no other action like swiping is taking place
-                    && currentLastTouchAction == null // last action was none, this prevents mis input random seek
-                    && holdTime != null
-                    && holdTime < DOUBLE_TAB_MAXIMUM_HOLD_TIME // it is a click not a long hold
-                ) {
-                    if (!isLocked
-                        && (System.currentTimeMillis() - currentLastTouchEndTime) < DOUBLE_TAB_MINIMUM_TIME_BETWEEN // the time since the last action is short
-                    ) {
+                if (isCurrentTouchValid && currentTouchAction == null && currentLastTouchAction == null
+                    && holdTime != null && holdTime < DOUBLE_TAB_MAXIMUM_HOLD_TIME) {
+                    if (!isLocked && (System.currentTimeMillis() - currentLastTouchEndTime) < DOUBLE_TAB_MINIMUM_TIME_BETWEEN) {
                         currentClickCount++
-
-                        if (currentClickCount >= 1) { // have double clicked
+                        if (currentClickCount >= 1) {
                             currentDoubleTapIndex++
-                            if (doubleTapPauseEnabled && isFullScreenPlayer) { // you can pause if your tap is in the middle of the screen
+                            if (doubleTapPauseEnabled && isFullScreenPlayer) {
                                 when {
                                     currentTouch.x < screenWidth / 2 - (DOUBLE_TAB_PAUSE_PERCENTAGE * screenWidth) -> {
-                                        if (doubleTapEnabled)
-                                            rewind()
+                                        if (doubleTapEnabled) rewind()
                                     }
                                     currentTouch.x > screenWidth / 2 + (DOUBLE_TAB_PAUSE_PERCENTAGE * screenWidth) -> {
-                                        if (doubleTapEnabled)
-                                            fastForward()
+                                        if (doubleTapEnabled) fastForward()
                                     }
-                                    else -> {
-                                        player.handleEvent(CSPlayerEvent.PlayPauseToggle)
-                                    }
+                                    else -> player.handleEvent(CSPlayerEvent.PlayPauseToggle)
                                 }
                             } else if (doubleTapEnabled && isFullScreenPlayer) {
-                                if (currentTouch.x < screenWidth / 2) {
-                                    rewind()
-                                } else {
-                                    fastForward()
-                                }
+                                if (currentTouch.x < screenWidth / 2) rewind() else fastForward()
                             }
                         }
                     } else {
-                        // is a valid click but not fast enough for seek
                         currentClickCount = 0
                         toggleShowDelayed()
-                        //onClickChange()
                     }
                 } else {
                     currentClickCount = 0
                 }
 
-                // call auto hide as it wont hide when you have your finger down
                 autoHide()
-
-                // reset variables
                 isCurrentTouchValid = false
                 currentTouchStart = null
                 currentLastTouchAction = currentTouchAction
@@ -870,29 +679,22 @@ open class FullScreenPlayer : AbstractPlayerFragment() {
                 currentTouchLast = null
                 currentTouchStartTime = null
 
-                // resets UI
-                player_time_text?.isVisible = false
-                player_progressbar_left_holder?.isVisible = false
-                player_progressbar_right_holder?.isVisible = false
+                binding.playerTimeText?.isVisible = false
+                binding.playerProgressbarLeftHolder?.isVisible = false
+                binding.playerProgressbarRightHolder?.isVisible = false
                 currentLastTouchEndTime = System.currentTimeMillis()
             }
             MotionEvent.ACTION_MOVE -> {
-                // if current touch is valid
                 if (startTouch != null && isCurrentTouchValid && !isLocked && isFullScreenPlayer) {
-                    // action is unassigned and can therefore be assigned
                     if (currentTouchAction == null) {
                         val diffFromStart = startTouch - currentTouch
-
                         if (swipeVerticalEnabled) {
                             if (abs(diffFromStart.y * 100 / screenHeight) > MINIMUM_VERTICAL_SWIPE) {
-                                // left = Brightness, right = Volume, but the UI is reversed to show the UI better
                                 currentTouchAction = if (startTouch.x < screenWidth / 2) {
-                                    // hide the UI if you hold brightness to show screen better, better UX
                                     if (isShowing) {
                                         isShowing = false
                                         animateLayoutChanges()
                                     }
-
                                     TouchAction.Brightness
                                 } else {
                                     TouchAction.Volume
@@ -906,109 +708,47 @@ open class FullScreenPlayer : AbstractPlayerFragment() {
                         }
                     }
 
-                    // display action
                     val lastTouch = currentTouchLast
                     if (lastTouch != null) {
                         val diffFromLast = lastTouch - currentTouch
-                        val verticalAddition =
-                            diffFromLast.y * VERTICAL_MULTIPLIER / screenHeight.toFloat()
+                        val verticalAddition = diffFromLast.y * VERTICAL_MULTIPLIER / screenHeight.toFloat()
 
-                        // update UI
-                        player_time_text?.isVisible = false
-                        player_progressbar_left_holder?.isVisible = false
-                        player_progressbar_right_holder?.isVisible = false
+                        binding.playerTimeText?.isVisible = false
+                        binding.playerProgressbarLeftHolder?.isVisible = false
+                        binding.playerProgressbarRightHolder?.isVisible = false
 
                         when (currentTouchAction) {
                             TouchAction.Time -> {
-                                // this simply updates UI as the seek logic happens on release
-                                // startTime is rounded to make the UI sync in a nice way
-                                val startTime =
-                                    currentTouchStartPlayerTime?.div(1000L)?.times(1000L)
+                                val startTime = currentTouchStartPlayerTime?.div(1000L)?.times(1000L)
                                 if (startTime != null) {
-                                    calculateNewTime(
-                                        startTime,
-                                        startTouch,
-                                        currentTouch
-                                    )?.let { newMs ->
+                                    calculateNewTime(startTime, startTouch, currentTouch)?.let { newMs ->
                                         val skipMs = newMs - startTime
-                                        player_time_text?.text =
-                                            "${convertTimeToString(newMs / 1000)} [${
-                                                (if (abs(skipMs) < 1000) "" else (if (skipMs > 0) "+" else "-"))
-                                            }${convertTimeToString(abs(skipMs / 1000))}]"
-                                        player_time_text?.isVisible = true
+                                        binding.playerTimeText?.text = "${convertTimeToString(newMs / 1000)} [${if (abs(skipMs) < 1000) "" else (if (skipMs > 0) "+" else "-")}${convertTimeToString(abs(skipMs / 1000))}]"
+                                        binding.playerTimeText?.isVisible = true
                                     }
                                 }
                             }
                             TouchAction.Brightness -> {
-                                player_progressbar_right_holder?.isVisible = true
+                                binding.playerProgressbarRightHolder?.isVisible = true
                                 val lastRequested = currentRequestedBrightness
-                                currentRequestedBrightness =
-                                    min(
-                                        1.0f,
-                                        max(currentRequestedBrightness + verticalAddition, 0.0f)
-                                    )
-
-                                // this is to not spam request it, just in case it fucks over someone
-                                if (lastRequested != currentRequestedBrightness)
-                                    setBrightness(currentRequestedBrightness)
-
-                                // max is set high to make it smooth
-                                player_progressbar_right?.max = 100_000
-                                player_progressbar_right?.progress =
-                                    max(2_000, (currentRequestedBrightness * 100_000f).toInt())
-
-                                player_progressbar_right_icon?.setImageResource(
-                                    brightnessIcons[min( // clamp the value just in case
-                                        brightnessIcons.size - 1,
-                                        max(
-                                            0,
-                                            round(currentRequestedBrightness * (brightnessIcons.size - 1)).toInt()
-                                        )
-                                    )]
-                                )
+                                currentRequestedBrightness = min(1.0f, max(currentRequestedBrightness + verticalAddition, 0.0f))
+                                if (lastRequested != currentRequestedBrightness) setBrightness(currentRequestedBrightness)
+                                binding.playerProgressbarRight?.max = 100_000
+                                binding.playerProgressbarRight?.progress = max(2_000, (currentRequestedBrightness * 100_000f).toInt())
+                                binding.playerProgressbarRightIcon?.setImageResource(brightnessIcons[min(brightnessIcons.size - 1, max(0, round(currentRequestedBrightness * (brightnessIcons.size - 1)).toInt()))])
                             }
                             TouchAction.Volume -> {
                                 (activity?.getSystemService(Context.AUDIO_SERVICE) as? AudioManager)?.let { audioManager ->
-                                    player_progressbar_left_holder?.isVisible = true
-                                    val maxVolume =
-                                        audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
-                                    val currentVolume =
-                                        audioManager.getStreamVolume(AudioManager.STREAM_MUSIC)
-
-                                    // clamps volume and adds swipe
-                                    currentRequestedVolume =
-                                        min(
-                                            1.0f,
-                                            max(currentRequestedVolume + verticalAddition, 0.0f)
-                                        )
-
-                                    // max is set high to make it smooth
-                                    player_progressbar_left?.max = 100_000
-                                    player_progressbar_left?.progress =
-                                        max(2_000, (currentRequestedVolume * 100_000f).toInt())
-
-                                    player_progressbar_left_icon?.setImageResource(
-                                        volumeIcons[min( // clamp the value just in case
-                                            volumeIcons.size - 1,
-                                            max(
-                                                0,
-                                                round(currentRequestedVolume * (volumeIcons.size - 1)).toInt()
-                                            )
-                                        )]
-                                    )
-
-                                    // this is used instead of set volume because old devices does not support it
-                                    val desiredVolume =
-                                        round(currentRequestedVolume * maxVolume).toInt()
+                                    binding.playerProgressbarLeftHolder?.isVisible = true
+                                    val maxVolume = audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
+                                    val currentVolume = audioManager.getStreamVolume(AudioManager.STREAM_MUSIC)
+                                    currentRequestedVolume = min(1.0f, max(currentRequestedVolume + verticalAddition, 0.0f))
+                                    binding.playerProgressbarLeft?.max = 100_000
+                                    binding.playerProgressbarLeft?.progress = max(2_000, (currentRequestedVolume * 100_000f).toInt())
+                                    binding.playerProgressbarLeftIcon?.setImageResource(volumeIcons[min(volumeIcons.size - 1, max(0, round(currentRequestedVolume * (volumeIcons.size - 1)).toInt()))])
+                                    val desiredVolume = round(currentRequestedVolume * maxVolume).toInt()
                                     if (desiredVolume != currentVolume) {
-                                        val newVolumeAdjusted =
-                                            if (desiredVolume < currentVolume) AudioManager.ADJUST_LOWER else AudioManager.ADJUST_RAISE
-
-                                        audioManager.adjustStreamVolume(
-                                            AudioManager.STREAM_MUSIC,
-                                            newVolumeAdjusted,
-                                            0
-                                        )
+                                        audioManager.adjustStreamVolume(AudioManager.STREAM_MUSIC, if (desiredVolume < currentVolume) AudioManager.ADJUST_LOWER else AudioManager.ADJUST_RAISE, 0)
                                     }
                                 }
                             }
@@ -1023,6 +763,7 @@ open class FullScreenPlayer : AbstractPlayerFragment() {
     }
 
     private fun handleKeyEvent(event: KeyEvent, hasNavigated: Boolean): Boolean {
+        val binding = customLayoutBinding ?: return false
         if (hasNavigated) {
             autoHide()
         } else {
@@ -1047,7 +788,7 @@ open class FullScreenPlayer : AbstractPlayerFragment() {
                                 if (!isShowing && !isLocked) {
                                     player.seekTime(-10000L)
                                     return true
-                                } else if (player_pause_play?.isFocused == true) {
+                                } else if (binding.playerPausePlay?.isFocused == true) {
                                     player.seekTime(-30000L)
                                     return true
                                 }
@@ -1056,7 +797,7 @@ open class FullScreenPlayer : AbstractPlayerFragment() {
                                 if (!isShowing && !isLocked) {
                                     player.seekTime(10000L)
                                     return true
-                                } else if (player_pause_play?.isFocused == true) {
+                                } else if (binding.playerPausePlay?.isFocused == true) {
                                     player.seekTime(30000L)
                                     return true
                                 }
@@ -1066,22 +807,11 @@ open class FullScreenPlayer : AbstractPlayerFragment() {
                 }
 
                 when (keyCode) {
-                    // don't allow dpad move when hidden
-
-                    KeyEvent.KEYCODE_DPAD_DOWN,
-                    KeyEvent.KEYCODE_DPAD_UP,
-                    KeyEvent.KEYCODE_DPAD_DOWN_LEFT,
-                    KeyEvent.KEYCODE_DPAD_DOWN_RIGHT,
-                    KeyEvent.KEYCODE_DPAD_UP_LEFT,
-                    KeyEvent.KEYCODE_DPAD_UP_RIGHT -> {
-                        if (!isShowing) {
-                            return true
-                        } else {
-                            autoHide()
-                        }
+                    KeyEvent.KEYCODE_DPAD_DOWN, KeyEvent.KEYCODE_DPAD_UP,
+                    KeyEvent.KEYCODE_DPAD_DOWN_LEFT, KeyEvent.KEYCODE_DPAD_DOWN_RIGHT,
+                    KeyEvent.KEYCODE_DPAD_UP_LEFT, KeyEvent.KEYCODE_DPAD_UP_RIGHT -> {
+                        if (!isShowing) return true else autoHide()
                     }
-
-                    // netflix capture back and hide ~monke
                     KeyEvent.KEYCODE_BACK -> {
                         if (isShowing && isTv) {
                             onClickChange()
@@ -1091,18 +821,17 @@ open class FullScreenPlayer : AbstractPlayerFragment() {
                 }
             }
         }
-
         return false
     }
 
     protected fun uiReset() {
+        val binding = customLayoutBinding ?: return
         isLocked = false
         isShowing = false
 
-        // if nothing has loaded these buttons should not be visible
-        player_skip_episode?.isVisible = false
-        player_skip_op?.isVisible = false
-        shadow_overlay?.isVisible = false
+        binding.playerSkipEpisode?.isVisible = false
+        binding.playerSkipOp?.isVisible = false
+        binding.shadowOverlay?.isVisible = false
 
         updateLockUI()
         updateUIVisibility()
@@ -1114,51 +843,27 @@ open class FullScreenPlayer : AbstractPlayerFragment() {
     @SuppressLint("ClickableViewAccessibility")
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        // init variables
+
+        // Inisialisasi binding untuk custom layout
+        customLayoutBinding = PlayerCustomLayoutBinding.bind(view.findViewById(R.id.player_custom_layout) ?: return)
+
         setPlayBackSpeed(getKey(PLAYBACK_SPEED_KEY) ?: 1.0f)
 
-        // handle tv controls
         playerEventListener = { eventType ->
             when (eventType) {
-                PlayerEventType.Lock -> {
-                    toggleLock()
-                }
-                PlayerEventType.NextEpisode -> {
-                    player.handleEvent(CSPlayerEvent.NextEpisode)
-                }
-                PlayerEventType.Pause -> {
-                    player.handleEvent(CSPlayerEvent.Pause)
-                }
-                PlayerEventType.PlayPauseToggle -> {
-                    player.handleEvent(CSPlayerEvent.PlayPauseToggle)
-                }
-                PlayerEventType.Play -> {
-                    player.handleEvent(CSPlayerEvent.Play)
-                }
-                PlayerEventType.Resize -> {
-                    nextResize()
-                }
-                PlayerEventType.PrevEpisode -> {
-                    player.handleEvent(CSPlayerEvent.PrevEpisode)
-                }
-                PlayerEventType.SeekForward -> {
-                    player.handleEvent(CSPlayerEvent.SeekForward)
-                }
-                PlayerEventType.ShowSpeed -> {
-                    showSpeedDialog()
-                }
-                PlayerEventType.SeekBack -> {
-                    player.handleEvent(CSPlayerEvent.SeekBack)
-                }
-                PlayerEventType.ToggleMute -> {
-                    player.handleEvent(CSPlayerEvent.ToggleMute)
-                }
-                PlayerEventType.ToggleHide -> {
-                    onClickChange()
-                }
-                PlayerEventType.ShowMirrors -> {
-                    showMirrorsDialogue()
-                }
+                PlayerEventType.Lock -> toggleLock()
+                PlayerEventType.NextEpisode -> player.handleEvent(CSPlayerEvent.NextEpisode)
+                PlayerEventType.Pause -> player.handleEvent(CSPlayerEvent.Pause)
+                PlayerEventType.PlayPauseToggle -> player.handleEvent(CSPlayerEvent.PlayPauseToggle)
+                PlayerEventType.Play -> player.handleEvent(CSPlayerEvent.Play)
+                PlayerEventType.Resize -> nextResize()
+                PlayerEventType.PrevEpisode -> player.handleEvent(CSPlayerEvent.PrevEpisode)
+                PlayerEventType.SeekForward -> player.handleEvent(CSPlayerEvent.SeekForward)
+                PlayerEventType.ShowSpeed -> showSpeedDialog()
+                PlayerEventType.SeekBack -> player.handleEvent(CSPlayerEvent.SeekBack)
+                PlayerEventType.ToggleMute -> player.handleEvent(CSPlayerEvent.ToggleMute)
+                PlayerEventType.ToggleHide -> onClickChange()
+                PlayerEventType.ShowMirrors -> showMirrorsDialogue()
                 PlayerEventType.SearchSubtitlesOnline -> {
                     if (subsProvidersIsActive) {
                         openOnlineSubPicker(view.context, null) {}
@@ -1167,184 +872,106 @@ open class FullScreenPlayer : AbstractPlayerFragment() {
             }
         }
 
-        // handle tv controls directly based on player state
         keyEventListener = { eventNav ->
-            // Don't hook player keys if player isn't active
             if (player.isActive()) {
                 val (event, hasNavigated) = eventNav
-                if (event != null)
-                    handleKeyEvent(event, hasNavigated)
-                else false
+                event?.let { handleKeyEvent(it, hasNavigated) } ?: false
             } else false
         }
-
-        //player_episodes_button?.setOnClickListener {
-        //    player_episodes_button?.isGone = true
-        //    player_episode_list?.isVisible = true
-        //}
-//
-        //player_episode_list?.adapter = PlayerEpisodeAdapter { click ->
-//
-        //}
 
         try {
             context?.let { ctx ->
                 val settingsManager = PreferenceManager.getDefaultSharedPreferences(ctx)
-
-                fastForwardTime =
-                    settingsManager.getInt(ctx.getString(R.string.double_tap_seek_time_key), 10)
-                        .toLong() * 1000L
-
+                fastForwardTime = settingsManager.getInt(ctx.getString(R.string.double_tap_seek_time_key), 10).toLong() * 1000L
                 navigationBarHeight = ctx.getNavigationBarHeight()
                 statusBarHeight = ctx.getStatusBarHeight()
-
-                swipeHorizontalEnabled =
-                    settingsManager.getBoolean(ctx.getString(R.string.swipe_enabled_key), true)
-                swipeVerticalEnabled =
-                    settingsManager.getBoolean(
-                        ctx.getString(R.string.swipe_vertical_enabled_key),
-                        true
-                    )
-                playBackSpeedEnabled = settingsManager.getBoolean(
-                    ctx.getString(R.string.playback_speed_enabled_key),
-                    false
-                )
-                playerResizeEnabled =
-                    settingsManager.getBoolean(
-                        ctx.getString(R.string.player_resize_enabled_key),
-                        true
-                    )
-                doubleTapEnabled =
-                    settingsManager.getBoolean(
-                        ctx.getString(R.string.double_tap_enabled_key),
-                        false
-                    )
-
-                doubleTapPauseEnabled =
-                    settingsManager.getBoolean(
-                        ctx.getString(R.string.double_tap_pause_enabled_key),
-                        false
-                    )
-
-                currentPrefQuality = settingsManager.getInt(
-                    ctx.getString(R.string.quality_pref_key),
-                    currentPrefQuality
-                )
-                // useSystemBrightness =
-                //    settingsManager.getBoolean(ctx.getString(R.string.use_system_brightness_key), false)
+                swipeHorizontalEnabled = settingsManager.getBoolean(ctx.getString(R.string.swipe_enabled_key), true)
+                swipeVerticalEnabled = settingsManager.getBoolean(ctx.getString(R.string.swipe_vertical_enabled_key), true)
+                playBackSpeedEnabled = settingsManager.getBoolean(ctx.getString(R.string.playback_speed_enabled_key), false)
+                playerResizeEnabled = settingsManager.getBoolean(ctx.getString(R.string.player_resize_enabled_key), true)
+                doubleTapEnabled = settingsManager.getBoolean(ctx.getString(R.string.double_tap_enabled_key), false)
+                doubleTapPauseEnabled = settingsManager.getBoolean(ctx.getString(R.string.double_tap_pause_enabled_key), false)
+                currentPrefQuality = settingsManager.getInt(ctx.getString(R.string.quality_pref_key), currentPrefQuality)
             }
 
-            player_speed_btt?.isVisible = playBackSpeedEnabled
-            player_resize_btt?.isVisible = playerResizeEnabled
+            customLayoutBinding?.playerSpeedBtt?.isVisible = playBackSpeedEnabled
+            customLayoutBinding?.playerResizeBtt?.isVisible = playerResizeEnabled
         } catch (e: Exception) {
             logError(e)
         }
 
-        player_pause_play?.setOnClickListener {
+        customLayoutBinding?.playerPausePlay?.setOnClickListener {
             autoHide()
             player.handleEvent(CSPlayerEvent.PlayPauseToggle)
         }
 
-        // init clicks
-        player_resize_btt?.setOnClickListener {
+        customLayoutBinding?.playerResizeBtt?.setOnClickListener {
             autoHide()
             nextResize()
         }
 
-        player_speed_btt?.setOnClickListener {
+        customLayoutBinding?.playerSpeedBtt?.setOnClickListener {
             autoHide()
             showSpeedDialog()
         }
 
-        player_skip_op?.setOnClickListener {
+        customLayoutBinding?.playerSkipOp?.setOnClickListener {
             autoHide()
             skipOp()
         }
 
-        player_skip_episode?.setOnClickListener {
+        customLayoutBinding?.playerSkipEpisode?.setOnClickListener {
             autoHide()
             player.handleEvent(CSPlayerEvent.NextEpisode)
         }
 
-        player_lock?.setOnClickListener {
+        customLayoutBinding?.playerLock?.setOnClickListener {
             autoHide()
             toggleLock()
         }
 
-        player_subtitle_offset_btt?.setOnClickListener {
+        customLayoutBinding?.playerSubtitleOffsetBtt?.setOnClickListener {
             showSubtitleOffsetDialog()
         }
 
-        exo_rew?.setOnClickListener {
+        customLayoutBinding?.exoRew?.setOnClickListener {
             autoHide()
             rewind()
         }
 
-        exo_ffwd?.setOnClickListener {
+        customLayoutBinding?.exoFfwd?.setOnClickListener {
             autoHide()
             fastForward()
         }
 
-        player_go_back?.setOnClickListener {
+        fragmentBinding?.playerGoBack?.setOnClickListener {
             activity?.popCurrentPage()
         }
 
-        player_sources_btt?.setOnClickListener {
+        fragmentBinding?.playerSourcesBtt?.setOnClickListener {
             showMirrorsDialogue()
         }
 
-        player_intro_play?.setOnClickListener {
-            player_intro_play?.isGone = true
+        customLayoutBinding?.playerIntroPlay?.setOnClickListener {
+            customLayoutBinding?.playerIntroPlay?.isGone = true
             player.handleEvent(CSPlayerEvent.Play)
             updateUIVisibility()
         }
 
-        // it is !not! a bug that you cant touch the right side, it does not register inputs on navbar or status bar
-        player_holder?.setOnTouchListener { callView, event ->
-            return@setOnTouchListener handleMotionEvent(callView, event)
+        customLayoutBinding?.playerHolder?.setOnTouchListener { callView, event ->
+            handleMotionEvent(callView, event)
         }
 
-        exo_progress?.setOnTouchListener { _, event ->
-            // this makes the bar not disappear when sliding
+        customLayoutBinding?.exoProgress?.setOnTouchListener { _, event ->
             when (event.action) {
-                MotionEvent.ACTION_DOWN -> {
-                    currentTapIndex++
-                }
-                MotionEvent.ACTION_MOVE -> {
-                    currentTapIndex++
-                }
-                MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL, MotionEvent.ACTION_BUTTON_RELEASE -> {
-                    autoHide()
-                }
+                MotionEvent.ACTION_DOWN, MotionEvent.ACTION_MOVE -> currentTapIndex++
+                MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL, MotionEvent.ACTION_BUTTON_RELEASE -> autoHide()
             }
-            return@setOnTouchListener false
+            false
         }
-        // init UI
+
         try {
             uiReset()
-
-            // init chromecast UI
-            // removed due to having no use and bugging
-            //activity?.let {
-            //    if (it.isCastApiAvailable()) {
-            //        try {
-            //            CastButtonFactory.setUpMediaRouteButton(it, player_media_route_button)
-            //            val castContext = CastContext.getSharedInstance(it.applicationContext)
-            //
-            //            player_media_route_button?.isGone =
-            //                castContext.castState == CastState.NO_DEVICES_AVAILABLE
-            //            castContext.addCastStateListener { state ->
-            //                player_media_route_button?.isGone =
-            //                    state == CastState.NO_DEVICES_AVAILABLE
-            //            }
-            //        } catch (e: Exception) {
-            //            logError(e)
-            //        }
-            //    } else {
-            //        // if cast is not possible hide UI
-            //        player_media_route_button?.isGone = true
-            //    }
-            //}
         } catch (e: Exception) {
             logError(e)
         }
