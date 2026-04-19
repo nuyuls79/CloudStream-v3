@@ -31,15 +31,14 @@ import com.lagradost.cloudstream3.utils.UIHelper.fixPaddingStatusbar
 import com.lagradost.cloudstream3.utils.UIHelper.hideSystemUI
 import com.lagradost.cloudstream3.utils.UIHelper.navigate
 import com.lagradost.cloudstream3.utils.UIHelper.popCurrentPage
-import kotlinx.android.synthetic.main.subtitle_settings.*
 
 const val CHROME_SUBTITLE_KEY = "chome_subtitle_settings"
 
 data class SaveChromeCaptionStyle(
     @JsonProperty("fontFamily") var fontFamily: String? = null,
     @JsonProperty("fontGenericFamily") var fontGenericFamily: Int? = null,
-    @JsonProperty("backgroundColor") var backgroundColor: Int = 0x00FFFFFF, // transparent
-    @JsonProperty("edgeColor") var edgeColor: Int = Color.BLACK, // BLACK
+    @JsonProperty("backgroundColor") var backgroundColor: Int = 0x00FFFFFF,
+    @JsonProperty("edgeColor") var edgeColor: Int = Color.BLACK,
     @JsonProperty("edgeType") var edgeType: Int = TextTrackStyle.EDGE_TYPE_OUTLINE,
     @JsonProperty("foregroundColor") var foregroundColor: Int = Color.WHITE,
     @JsonProperty("fontScale") var fontScale: Float = 1.05f,
@@ -49,20 +48,6 @@ data class SaveChromeCaptionStyle(
 class ChromecastSubtitlesFragment : Fragment() {
     companion object {
         val applyStyleEvent = Event<SaveChromeCaptionStyle>()
-
-        //fun Context.fromSaveToStyle(data: SaveChromeCaptionStyle): CaptionStyleCompat {
-        //    return CaptionStyleCompat(
-        //        data.foregroundColor,
-        //        data.backgroundColor,
-        //        data.windowColor,
-        //        data.edgeType,
-        //        data.edgeColor,
-        //        if (typeface == null) Typeface.SANS_SERIF else ResourcesCompat.getFont(
-        //            this,
-        //            typeface
-        //        )
-        //    )
-        //}
 
         fun push(activity: Activity?, hide: Boolean = true) {
             activity.navigate(R.id.global_to_navigation_chrome_subtitles, Bundle().apply {
@@ -96,6 +81,29 @@ class ChromecastSubtitlesFragment : Fragment() {
         private val defaultState = SaveChromeCaptionStyle()
     }
 
+    private lateinit var state: SaveChromeCaptionStyle
+    private var hide: Boolean = true
+
+    // View references
+    private lateinit var subsRoot: View
+    private lateinit var subsTextColor: View
+    private lateinit var subsOutlineColor: View
+    private lateinit var subsBackgroundColor: View
+    private lateinit var subsEdgeType: TextView
+    private lateinit var subsFontSize: TextView
+    private lateinit var subsFont: TextView
+    private lateinit var cancelBtt: View
+    private lateinit var applyBtt: View
+    private lateinit var subtitleText: TextView
+
+    override fun onCreateView(
+        inflater: LayoutInflater,
+        container: ViewGroup?,
+        savedInstanceState: Bundle?,
+    ): View? {
+        return inflater.inflate(R.layout.subtitle_settings, container, false)
+    }
+
     private fun onColorSelected(stuff: Pair<Int, Int>) {
         context?.setColor(stuff.first, stuff.second)
         if (hide)
@@ -113,10 +121,8 @@ class ChromecastSubtitlesFragment : Fragment() {
             1 -> state.edgeColor
             2 -> state.backgroundColor
             3 -> state.windowColor
-
             else -> Color.TRANSPARENT
         }
-
         return if (color == Color.TRANSPARENT) Color.BLACK else color
     }
 
@@ -127,39 +133,41 @@ class ChromecastSubtitlesFragment : Fragment() {
             1 -> state.edgeColor = realColor
             2 -> state.backgroundColor = realColor
             3 -> state.windowColor = realColor
-
             else -> Unit
         }
         updateState()
     }
 
     private fun Context.updateState() {
-        //subtitle_text?.setStyle(fromSaveToStyle(state))
+        // Not implemented in original
     }
-
-    override fun onCreateView(
-        inflater: LayoutInflater,
-        container: ViewGroup?,
-        savedInstanceState: Bundle?,
-    ): View? {
-        return inflater.inflate(R.layout.chromecast_subtitle_settings, container, false)
-    }
-
-    private lateinit var state: SaveChromeCaptionStyle
-    private var hide: Boolean = true
 
     override fun onDestroy() {
         super.onDestroy()
         onColorSelectedEvent -= ::onColorSelected
+        onDialogDismissedEvent -= ::onDialogDismissed
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+
+        // Initialize views via findViewById
+        subsRoot = view.findViewById(R.id.subs_root)
+        subsTextColor = view.findViewById(R.id.subs_text_color)
+        subsOutlineColor = view.findViewById(R.id.subs_outline_color)
+        subsBackgroundColor = view.findViewById(R.id.subs_background_color)
+        subsEdgeType = view.findViewById(R.id.subs_edge_type)
+        subsFontSize = view.findViewById(R.id.subs_font_size)
+        subsFont = view.findViewById(R.id.subs_font)
+        cancelBtt = view.findViewById(R.id.cancel_btt)
+        applyBtt = view.findViewById(R.id.apply_btt)
+        subtitleText = view.findViewById(R.id.subtitle_text)
+
         hide = arguments?.getBoolean("hide") ?: true
         onColorSelectedEvent += ::onColorSelected
         onDialogDismissedEvent += ::onDialogDismissed
 
-        context?.fixPaddingStatusbar(subs_root)
+        context?.fixPaddingStatusbar(subsRoot)
 
         state = getCurrentSavedStyle()
         context?.updateState()
@@ -172,7 +180,6 @@ class ChromecastSubtitlesFragment : Fragment() {
 
         fun View.setup(id: Int) {
             setFocusableInTv()
-
             this.setOnClickListener {
                 activity?.let {
                     ColorPickerDialog.newBuilder()
@@ -182,7 +189,6 @@ class ChromecastSubtitlesFragment : Fragment() {
                         .show(it)
                 }
             }
-
             this.setOnLongClickListener {
                 it.context.setColor(id, null)
                 showToast(activity, R.string.subs_default_reset_toast, Toast.LENGTH_SHORT)
@@ -190,41 +196,24 @@ class ChromecastSubtitlesFragment : Fragment() {
             }
         }
 
-        subs_text_color.setup(0)
-        subs_outline_color.setup(1)
-        subs_background_color.setup(2)
+        subsTextColor.setup(0)
+        subsOutlineColor.setup(1)
+        subsBackgroundColor.setup(2)
 
         val dismissCallback = {
             if (hide)
                 activity?.hideSystemUI()
         }
 
-        subs_edge_type.setFocusableInTv()
-        subs_edge_type.setOnClickListener { textView ->
+        subsEdgeType.setFocusableInTv()
+        subsEdgeType.setOnClickListener { textView ->
             val edgeTypes = listOf(
-                Pair(
-                    EDGE_TYPE_NONE,
-                    textView.context.getString(R.string.subtitles_none)
-                ),
-                Pair(
-                    EDGE_TYPE_OUTLINE,
-                    textView.context.getString(R.string.subtitles_outline)
-                ),
-                Pair(
-                    EDGE_TYPE_DEPRESSED,
-                    textView.context.getString(R.string.subtitles_depressed)
-                ),
-                Pair(
-                    EDGE_TYPE_DROP_SHADOW,
-                    textView.context.getString(R.string.subtitles_shadow)
-                ),
-                Pair(
-                    EDGE_TYPE_RAISED,
-                    textView.context.getString(R.string.subtitles_raised)
-                ),
+                Pair(EDGE_TYPE_NONE, textView.context.getString(R.string.subtitles_none)),
+                Pair(EDGE_TYPE_OUTLINE, textView.context.getString(R.string.subtitles_outline)),
+                Pair(EDGE_TYPE_DEPRESSED, textView.context.getString(R.string.subtitles_depressed)),
+                Pair(EDGE_TYPE_DROP_SHADOW, textView.context.getString(R.string.subtitles_shadow)),
+                Pair(EDGE_TYPE_RAISED, textView.context.getString(R.string.subtitles_raised)),
             )
-
-            //showBottomDialog
             activity?.showDialog(
                 edgeTypes.map { it.second },
                 edgeTypes.map { it.first }.indexOf(state.edgeType),
@@ -237,35 +226,23 @@ class ChromecastSubtitlesFragment : Fragment() {
             }
         }
 
-        subs_edge_type.setOnLongClickListener {
+        subsEdgeType.setOnLongClickListener {
             state.edgeType = defaultState.edgeType
             it.context.updateState()
             showToast(activity, R.string.subs_default_reset_toast, Toast.LENGTH_SHORT)
             return@setOnLongClickListener true
         }
 
-        subs_font_size.setFocusableInTv()
-        subs_font_size.setOnClickListener { textView ->
+        subsFontSize.setFocusableInTv()
+        subsFontSize.setOnClickListener { textView ->
             val fontSizes = listOf(
-                Pair(0.75f, "75%"),
-                Pair(0.80f, "80%"),
-                Pair(0.85f, "85%"),
-                Pair(0.90f, "90%"),
-                Pair(0.95f, "95%"),
-                Pair(1.00f, "100%"),
+                Pair(0.75f, "75%"), Pair(0.80f, "80%"), Pair(0.85f, "85%"),
+                Pair(0.90f, "90%"), Pair(0.95f, "95%"), Pair(1.00f, "100%"),
                 Pair(1.05f, textView.context.getString(R.string.normal)),
-                Pair(1.10f, "110%"),
-                Pair(1.15f, "115%"),
-                Pair(1.20f, "120%"),
-                Pair(1.25f, "125%"),
-                Pair(1.30f, "130%"),
-                Pair(1.35f, "135%"),
-                Pair(1.40f, "140%"),
-                Pair(1.45f, "145%"),
-                Pair(1.50f, "150%"),
+                Pair(1.10f, "110%"), Pair(1.15f, "115%"), Pair(1.20f, "120%"),
+                Pair(1.25f, "125%"), Pair(1.30f, "130%"), Pair(1.35f, "135%"),
+                Pair(1.40f, "140%"), Pair(1.45f, "145%"), Pair(1.50f, "150%")
             )
-
-            //showBottomDialog
             activity?.showDialog(
                 fontSizes.map { it.second },
                 fontSizes.map { it.first }.indexOf(state.fontScale),
@@ -274,19 +251,17 @@ class ChromecastSubtitlesFragment : Fragment() {
                 dismissCallback
             ) { index ->
                 state.fontScale = fontSizes.map { it.first }[index]
-                //textView.context.updateState() // font size not changed
             }
         }
 
-        subs_font_size.setOnLongClickListener { _ ->
+        subsFontSize.setOnLongClickListener { _ ->
             state.fontScale = defaultState.fontScale
-            //textView.context.updateState() // font size not changed
             showToast(activity, R.string.subs_default_reset_toast, Toast.LENGTH_SHORT)
             return@setOnLongClickListener true
         }
 
-        subs_font.setFocusableInTv()
-        subs_font.setOnClickListener { textView ->
+        subsFont.setFocusableInTv()
+        subsFont.setOnClickListener { textView ->
             val fontTypes = listOf(
                 Pair(null, textView.context.getString(R.string.normal)),
                 Pair("Droid Sans", "Droid Sans"),
@@ -297,8 +272,6 @@ class ChromecastSubtitlesFragment : Fragment() {
                 Pair("Quintessential", "Quintessential"),
                 Pair("Alegreya Sans SC", "Alegreya Sans SC"),
             )
-
-            //showBottomDialog
             activity?.showDialog(
                 fontTypes.map { it.second },
                 fontTypes.map { it.first }.indexOf(state.fontFamily),
@@ -311,32 +284,31 @@ class ChromecastSubtitlesFragment : Fragment() {
             }
         }
 
-        subs_font.setOnLongClickListener { textView ->
+        subsFont.setOnLongClickListener { textView ->
             state.fontFamily = defaultState.fontFamily
             textView.context.updateState()
             showToast(activity, R.string.subs_default_reset_toast, Toast.LENGTH_SHORT)
             return@setOnLongClickListener true
         }
 
-        cancel_btt.setOnClickListener {
+        cancelBtt.setOnClickListener {
             activity?.popCurrentPage()
         }
 
-        apply_btt.setOnClickListener {
+        applyBtt.setOnClickListener {
             it.context.saveStyle(state)
             applyStyleEvent.invoke(state)
-            //it.context.fromSaveToStyle(state)
             activity?.popCurrentPage()
         }
 
-        subtitle_text.setCues(
+        subtitleText.setCues(
             listOf(
                 Cue.Builder()
                     .setTextSize(
                         getPixels(TypedValue.COMPLEX_UNIT_SP, 25.0f).toFloat(),
                         Cue.TEXT_SIZE_TYPE_ABSOLUTE
                     )
-                    .setText(subtitle_text.context.getString(R.string.subtitles_example_text))
+                    .setText(subtitleText.context.getString(R.string.subtitles_example_text))
                     .build()
             )
         )
