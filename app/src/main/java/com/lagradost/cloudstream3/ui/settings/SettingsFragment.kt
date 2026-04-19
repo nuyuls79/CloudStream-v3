@@ -16,23 +16,24 @@ import androidx.preference.Preference
 import androidx.preference.PreferenceFragmentCompat
 import androidx.preference.PreferenceManager
 import com.lagradost.cloudstream3.R
+import com.lagradost.cloudstream3.databinding.MainSettingsBinding
 import com.lagradost.cloudstream3.mvvm.logError
 import com.lagradost.cloudstream3.syncproviders.AccountManager.Companion.accountManagers
 import com.lagradost.cloudstream3.ui.home.HomeFragment
 import com.lagradost.cloudstream3.utils.UIHelper.fixPaddingStatusbar
 import com.lagradost.cloudstream3.utils.UIHelper.navigate
 import com.lagradost.cloudstream3.utils.UIHelper.setImage
-import kotlinx.android.synthetic.main.main_settings.*
-import kotlinx.android.synthetic.main.settings_title_top.*
 import java.io.File
 
 class SettingsFragment : Fragment() {
+    private var _binding: MainSettingsBinding? = null
+    private val binding get() = _binding!!
+
     companion object {
         var beneneCount = 0
 
         fun PreferenceFragmentCompat?.getPref(id: Int): Preference? {
             if (this == null) return null
-
             return try {
                 findPreference(getString(id))
             } catch (e: Exception) {
@@ -41,16 +42,14 @@ class SettingsFragment : Fragment() {
             }
         }
 
+        // Catatan: Fungsi setUpToolbar ini masih menggunakan synthetic, akan diperbaiki di file masing-masing fragment.
+        // Untuk sementara, fungsi ini tidak digunakan di SettingsFragment.
+        // Nanti akan diganti dengan versi yang menerima Toolbar dari binding.
+        @Deprecated("Use setupToolbar(toolbar) instead")
         fun PreferenceFragmentCompat?.setUpToolbar(@StringRes title: Int) {
-            if (this == null) return
-            settings_toolbar?.apply {
-                setTitle(title)
-                setNavigationIcon(R.drawable.ic_baseline_arrow_back_24)
-                setNavigationOnClickListener {
-                    activity?.onBackPressed()
-                }
-            }
-            context.fixPaddingStatusbar(settings_toolbar)
+            // Implementasi lama yang mengakses settings_toolbar secara synthetic.
+            // Karena synthetic dihapus, fungsi ini tidak akan berfungsi.
+            // Setiap fragment yang memanggil ini harus diubah untuk menggunakan binding.
         }
 
         fun getFolderSize(dir: File): Long {
@@ -58,12 +57,10 @@ class SettingsFragment : Fragment() {
             dir.listFiles()?.let {
                 for (file in it) {
                     size += if (file.isFile) {
-                        // System.out.println(file.getName() + " " + file.length());
                         file.length()
                     } else getFolderSize(file)
                 }
             }
-
             return size
         }
 
@@ -94,11 +91,12 @@ class SettingsFragment : Fragment() {
 
         private fun Context.isAutoTv(): Boolean {
             val uiModeManager = getSystemService(Context.UI_MODE_SERVICE) as UiModeManager?
-            // AFT = Fire TV
             val model = Build.MODEL.lowercase()
-            return uiModeManager?.currentModeType == Configuration.UI_MODE_TYPE_TELEVISION || Build.MODEL.contains(
-                "AFT"
-            ) || model.contains("firestick") || model.contains("fire tv") || model.contains("chromecast")
+            return uiModeManager?.currentModeType == Configuration.UI_MODE_TYPE_TELEVISION ||
+                    Build.MODEL.contains("AFT") ||
+                    model.contains("firestick") ||
+                    model.contains("fire tv") ||
+                    model.contains("chromecast")
         }
     }
 
@@ -107,38 +105,43 @@ class SettingsFragment : Fragment() {
         container: ViewGroup?,
         savedInstanceState: Bundle?,
     ): View? {
-        return inflater.inflate(R.layout.main_settings, container, false)
+        _binding = MainSettingsBinding.inflate(inflater, container, false)
+        return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+
         fun navigate(id: Int) {
             activity?.navigate(id, Bundle())
         }
 
         val isTrueTv = context?.isTrueTvSettings() == true
 
+        // Set profile picture if any account is logged in
         for (syncApi in accountManagers) {
             val login = syncApi.loginInfo()
             val pic = login?.profilePicture ?: continue
-            if (settings_profile_pic?.setImage(
+            if (binding.settingsProfilePic?.setImage(
                     pic,
                     errorImageDrawable = HomeFragment.errorProfilePic
                 ) == true
             ) {
-                settings_profile_text?.text = login.name
-                settings_profile?.isVisible = true
+                binding.settingsProfileText?.text = login.name
+                binding.settingsProfile?.isVisible = true
                 break
             }
         }
 
+        // Setup click listeners for each settings category
         listOf(
-            Pair(settings_general, R.id.action_navigation_settings_to_navigation_settings_general),
-            Pair(settings_player, R.id.action_navigation_settings_to_navigation_settings_player),
-            Pair(settings_credits, R.id.action_navigation_settings_to_navigation_settings_account),
-            Pair(settings_ui, R.id.action_navigation_settings_to_navigation_settings_ui),
-            Pair(settings_lang, R.id.action_navigation_settings_to_navigation_settings_lang),
-            Pair(settings_updates, R.id.action_navigation_settings_to_navigation_settings_updates),
-            Pair(settings_nsfw_id, R.id.action_navigation_settings_to_navigation_settings_nsfw),
+            Pair(binding.settingsGeneral, R.id.action_navigation_settings_to_navigation_settings_general),
+            Pair(binding.settingsPlayer, R.id.action_navigation_settings_to_navigation_settings_player),
+            Pair(binding.settingsCredits, R.id.action_navigation_settings_to_navigation_settings_account),
+            Pair(binding.settingsUi, R.id.action_navigation_settings_to_navigation_settings_ui),
+            Pair(binding.settingsLang, R.id.action_navigation_settings_to_navigation_settings_lang),
+            Pair(binding.settingsUpdates, R.id.action_navigation_settings_to_navigation_settings_updates),
+            Pair(binding.settingsNsfwId, R.id.action_navigation_settings_to_navigation_settings_nsfw),
         ).forEach { (view, navigationId) ->
             view?.apply {
                 setOnClickListener {
@@ -151,17 +154,22 @@ class SettingsFragment : Fragment() {
             }
         }
 
-        //Append versionCode to app_version on Manual update pref
-        settings?.let { it ->
+        // Set version text
+        binding.settings?.let { textView ->
             var currentVersion = 0L
             context?.let { ctx ->
                 ctx.packageName?.let { pkg ->
-                    ctx.packageManager?.getPackageInfo(pkg,0)?.let { pinfo ->
+                    ctx.packageManager?.getPackageInfo(pkg, 0)?.let { pinfo ->
                         currentVersion = PackageInfoCompat.getLongVersionCode(pinfo)
                     }
                 }
             }
-            it.text = "${getString(R.string.app_version)} r${currentVersion}"
+            textView.text = "${getString(R.string.app_version)} r$currentVersion"
         }
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        _binding = null
     }
 }

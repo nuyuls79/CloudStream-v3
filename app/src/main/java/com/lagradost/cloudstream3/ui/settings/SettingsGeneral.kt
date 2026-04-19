@@ -20,6 +20,8 @@ import com.lagradost.cloudstream3.AcraApplication.Companion.setKey
 import com.lagradost.cloudstream3.CommonActivity.showToast
 import com.lagradost.cloudstream3.R
 import com.lagradost.cloudstream3.app
+import com.lagradost.cloudstream3.databinding.AddRemoveSitesBinding
+import com.lagradost.cloudstream3.databinding.AddSiteInputBinding
 import com.lagradost.cloudstream3.mvvm.logError
 import com.lagradost.cloudstream3.mvvm.normalSafeApiCall
 import com.lagradost.cloudstream3.network.initClient
@@ -33,8 +35,6 @@ import com.lagradost.cloudstream3.utils.UIHelper.hideKeyboard
 import com.lagradost.cloudstream3.utils.USER_PROVIDER_API
 import com.lagradost.cloudstream3.utils.VideoDownloadManager
 import com.lagradost.cloudstream3.utils.VideoDownloadManager.getBasePath
-import kotlinx.android.synthetic.main.add_remove_sites.*
-import kotlinx.android.synthetic.main.add_site_input.*
 import java.io.File
 
 class SettingsGeneral : PreferenceFragmentCompat() {
@@ -57,25 +57,15 @@ class SettingsGeneral : PreferenceFragmentCompat() {
     // Open file picker
     private val pathPicker =
         registerForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
-            // It lies, it can be null if file manager quits.
             if (uri == null) return@registerForActivityResult
             val context = context ?: AcraApplication.context ?: return@registerForActivityResult
-            // RW perms for the path
             val flags = Intent.FLAG_GRANT_READ_URI_PERMISSION or
                     Intent.FLAG_GRANT_WRITE_URI_PERMISSION
-
             context.contentResolver.takePersistableUriPermission(uri, flags)
-
             val file = UniFile.fromUri(context, uri)
             println("Selected URI path: $uri - Full path: ${file.filePath}")
-
-            // Stores the real URI using download_path_key
-            // Important that the URI is stored instead of filepath due to permissions.
             PreferenceManager.getDefaultSharedPreferences(context)
                 .edit().putString(getString(R.string.download_path_key), uri.toString()).apply()
-
-            // From URI -> File path
-            // File path here is purely for cosmetic purposes in settings
             (file.filePath ?: uri.toString()).let {
                 PreferenceManager.getDefaultSharedPreferences(context)
                     .edit().putString(getString(R.string.download_path_pref), it).apply()
@@ -102,18 +92,19 @@ class SettingsGeneral : PreferenceFragmentCompat() {
                 {}) { selection ->
                 val provider = providers.getOrNull(selection) ?: return@showDialog
 
-                val builder =
-                    AlertDialog.Builder(context ?: return@showDialog, R.style.AlertDialogCustom)
-                        .setView(R.layout.add_site_input)
-
+                val builder = AlertDialog.Builder(context ?: return@showDialog, R.style.AlertDialogCustom)
+                    .setView(R.layout.add_site_input)
                 val dialog = builder.create()
                 dialog.show()
 
-                dialog.text2?.text = provider.name
-                dialog.apply_btt?.setOnClickListener {
-                    val name = dialog.site_name_input?.text?.toString()
-                    val url = dialog.site_url_input?.text?.toString()
-                    val lang = dialog.site_lang_input?.text?.toString()
+                // Inflate binding untuk dialog add_site_input
+                val binding = AddSiteInputBinding.bind(dialog.findViewById(android.R.id.custom) ?: return@showDialog)
+
+                binding.text2?.text = provider.name
+                binding.applyBtt?.setOnClickListener {
+                    val name = binding.siteNameInput?.text?.toString()
+                    val url = binding.siteUrlInput?.text?.toString()
+                    val lang = binding.siteLangInput?.text?.toString()
                     val realLang = if (lang.isNullOrBlank()) provider.lang else lang
                     if (url.isNullOrBlank() || name.isNullOrBlank() || realLang.length != 2) {
                         showToast(activity, R.string.error_invalid_data, Toast.LENGTH_SHORT)
@@ -127,7 +118,7 @@ class SettingsGeneral : PreferenceFragmentCompat() {
 
                     dialog.dismissSafe(activity)
                 }
-                dialog.cancel_btt?.setOnClickListener {
+                binding.cancelBtt?.setOnClickListener {
                     dialog.dismissSafe(activity)
                 }
             }
@@ -135,7 +126,6 @@ class SettingsGeneral : PreferenceFragmentCompat() {
 
         fun showDelete() {
             val current = getCurrent()
-
             activity?.showMultiDialog(
                 current.map { it.name },
                 listOf(),
@@ -147,50 +137,44 @@ class SettingsGeneral : PreferenceFragmentCompat() {
         }
 
         fun showAddOrDelete() {
-            val builder =
-                AlertDialog.Builder(context ?: return, R.style.AlertDialogCustom)
-                    .setView(R.layout.add_remove_sites)
-
+            val builder = AlertDialog.Builder(context ?: return, R.style.AlertDialogCustom)
+                .setView(R.layout.add_remove_sites)
             val dialog = builder.create()
             dialog.show()
 
-            dialog.add_site?.setOnClickListener {
+            val binding = AddRemoveSitesBinding.bind(dialog.findViewById(android.R.id.custom) ?: return)
+
+            binding.addSite?.setOnClickListener {
                 showAdd()
                 dialog.dismissSafe(activity)
             }
-            dialog.remove_site?.setOnClickListener {
+            binding.removeSite?.setOnClickListener {
                 showDelete()
                 dialog.dismissSafe(activity)
             }
         }
 
         getPref(R.string.override_site_key)?.setOnPreferenceClickListener { _ ->
-
             if (getCurrent().isEmpty()) {
                 showAdd()
             } else {
                 showAddOrDelete()
             }
-
             return@setOnPreferenceClickListener true
         }
 
         getPref(R.string.legal_notice_key)?.setOnPreferenceClickListener {
-            val builder: AlertDialog.Builder =
-                AlertDialog.Builder(it.context, R.style.AlertDialogCustom)
-            builder.setTitle(R.string.legal_notice)
-            builder.setMessage(R.string.legal_notice_text)
-            builder.show()
+            AlertDialog.Builder(it.context, R.style.AlertDialogCustom)
+                .setTitle(R.string.legal_notice)
+                .setMessage(R.string.legal_notice_text)
+                .show()
             return@setOnPreferenceClickListener true
         }
 
         getPref(R.string.dns_key)?.setOnPreferenceClickListener {
             val prefNames = resources.getStringArray(R.array.dns_pref)
             val prefValues = resources.getIntArray(R.array.dns_pref_values)
-
-            val currentDns =
-                settingsManager.getInt(getString(R.string.dns_pref), 0)
-
+            val currentDns = settingsManager.getInt(getString(R.string.dns_pref), 0)
             activity?.showBottomDialog(
                 prefNames.toList(),
                 prefValues.indexOf(currentDns),
@@ -202,19 +186,16 @@ class SettingsGeneral : PreferenceFragmentCompat() {
             }
             return@setOnPreferenceClickListener true
         }
+
         fun getDownloadDirs(): List<String> {
             return normalSafeApiCall {
                 val defaultDir = VideoDownloadManager.getDownloadDir()?.filePath
-
-                // app_name_download_path = Cloudstream and does not change depending on release.
-                // DOES NOT WORK ON SCOPED STORAGE.
                 val secondaryDir =
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) null else Environment.getExternalStorageDirectory().absolutePath +
                             File.separator + resources.getString(R.string.app_name_download_path)
                 val first = listOf(defaultDir, secondaryDir)
                 (try {
                     val currentDir = context?.getBasePath()?.let { it.first?.filePath ?: it.second }
-
                     (first +
                             requireContext().getExternalFilesDirs("").mapNotNull { it.path } +
                             currentDir)
@@ -226,18 +207,14 @@ class SettingsGeneral : PreferenceFragmentCompat() {
 
         getPref(R.string.download_path_key)?.setOnPreferenceClickListener {
             val dirs = getDownloadDirs()
-
-            val currentDir =
-                settingsManager.getString(getString(R.string.download_path_pref), null)
-                    ?: VideoDownloadManager.getDownloadDir().toString()
-
+            val currentDir = settingsManager.getString(getString(R.string.download_path_pref), null)
+                ?: VideoDownloadManager.getDownloadDir().toString()
             activity?.showBottomDialog(
                 dirs + listOf("Custom"),
                 dirs.indexOf(currentDir),
                 getString(R.string.download_path_pref),
                 true,
                 {}) {
-                // Last = custom
                 if (it == dirs.size) {
                     try {
                         pathPicker.launch(Uri.EMPTY)
@@ -245,9 +222,6 @@ class SettingsGeneral : PreferenceFragmentCompat() {
                         logError(e)
                     }
                 } else {
-                    // Sets both visual and actual paths.
-                    // key = used path
-                    // pref = visual path
                     settingsManager.edit()
                         .putString(getString(R.string.download_path_key), dirs[it]).apply()
                     settingsManager.edit()
@@ -258,30 +232,15 @@ class SettingsGeneral : PreferenceFragmentCompat() {
         }
 
         try {
-            SettingsFragment.beneneCount =
-                settingsManager.getInt(getString(R.string.benene_count), 0)
+            SettingsFragment.beneneCount = settingsManager.getInt(getString(R.string.benene_count), 0)
             getPref(R.string.benene_count)?.let { pref ->
-                pref.summary =
-                    if (SettingsFragment.beneneCount <= 0) getString(R.string.benene_count_text_none) else getString(
-                        R.string.benene_count_text
-                    ).format(
-                        SettingsFragment.beneneCount
-                    )
+                pref.summary = if (SettingsFragment.beneneCount <= 0) getString(R.string.benene_count_text_none)
+                else getString(R.string.benene_count_text).format(SettingsFragment.beneneCount)
 
                 pref.setOnPreferenceClickListener {
-                    try {
-                        SettingsFragment.beneneCount++
-                        settingsManager.edit().putInt(
-                            getString(R.string.benene_count),
-                            SettingsFragment.beneneCount
-                        )
-                            .apply()
-                        it.summary =
-                            getString(R.string.benene_count_text).format(SettingsFragment.beneneCount)
-                    } catch (e: Exception) {
-                        logError(e)
-                    }
-
+                    SettingsFragment.beneneCount++
+                    settingsManager.edit().putInt(getString(R.string.benene_count), SettingsFragment.beneneCount).apply()
+                    pref.summary = getString(R.string.benene_count_text).format(SettingsFragment.beneneCount)
                     return@setOnPreferenceClickListener true
                 }
             }

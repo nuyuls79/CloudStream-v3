@@ -5,7 +5,6 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import android.view.View
-import android.view.View.*
 import android.view.inputmethod.EditorInfo
 import android.widget.TextView
 import androidx.annotation.UiThread
@@ -16,6 +15,9 @@ import androidx.preference.PreferenceFragmentCompat
 import androidx.recyclerview.widget.RecyclerView
 import com.lagradost.cloudstream3.CommonActivity.showToast
 import com.lagradost.cloudstream3.R
+import com.lagradost.cloudstream3.databinding.AccountManagmentBinding
+import com.lagradost.cloudstream3.databinding.AccountSwitchBinding
+import com.lagradost.cloudstream3.databinding.AddAccountInputBinding
 import com.lagradost.cloudstream3.mvvm.logError
 import com.lagradost.cloudstream3.syncproviders.AccountManager
 import com.lagradost.cloudstream3.syncproviders.AccountManager.Companion.aniListApi
@@ -32,9 +34,6 @@ import com.lagradost.cloudstream3.utils.Coroutines.ioSafe
 import com.lagradost.cloudstream3.utils.UIHelper.dismissSafe
 import com.lagradost.cloudstream3.utils.UIHelper.hideKeyboard
 import com.lagradost.cloudstream3.utils.UIHelper.setImage
-import kotlinx.android.synthetic.main.account_managment.*
-import kotlinx.android.synthetic.main.account_switch.*
-import kotlinx.android.synthetic.main.add_account_input.*
 
 class SettingsAccount : PreferenceFragmentCompat() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -43,25 +42,27 @@ class SettingsAccount : PreferenceFragmentCompat() {
     }
 
     private fun showLoginInfo(api: AccountManager, info: AuthAPI.LoginInfo) {
-        val builder =
-            AlertDialog.Builder(context ?: return, R.style.AlertDialogCustom)
-                .setView(R.layout.account_managment)
+        val builder = AlertDialog.Builder(context ?: return, R.style.AlertDialogCustom)
+            .setView(R.layout.account_managment)
         val dialog = builder.show()
 
-        dialog.account_main_profile_picture_holder?.isVisible =
-            dialog.account_main_profile_picture?.setImage(info.profilePicture) == true
+        // Inflate binding untuk dialog account_managment
+        val binding = AccountManagmentBinding.bind(dialog.findViewById(android.R.id.custom) ?: return)
 
-        dialog.account_logout?.setOnClickListener {
+        binding.accountMainProfilePictureHolder?.isVisible =
+            binding.accountMainProfilePicture?.setImage(info.profilePicture) == true
+
+        binding.accountLogout?.setOnClickListener {
             api.logOut()
             dialog.dismissSafe(activity)
         }
 
         (info.name ?: context?.getString(R.string.no_data))?.let {
-            dialog.findViewById<TextView>(R.id.account_name)?.text = it
+            binding.accountName?.text = it
         }
 
-        dialog.account_site?.text = api.name
-        dialog.account_switch_account?.setOnClickListener {
+        binding.accountSite?.text = api.name
+        binding.accountSwitchAccount?.setOnClickListener {
             dialog.dismissSafe(activity)
             showAccountSwitch(it.context, api)
         }
@@ -75,16 +76,18 @@ class SettingsAccount : PreferenceFragmentCompat() {
                     api.authenticate()
                 }
                 is InAppAuthAPI -> {
-                    val builder =
-                        AlertDialog.Builder(context ?: return, R.style.AlertDialogCustom)
-                            .setView(R.layout.add_account_input)
+                    val builder = AlertDialog.Builder(context ?: return, R.style.AlertDialogCustom)
+                        .setView(R.layout.add_account_input)
                     val dialog = builder.show()
 
+                    // Inflate binding untuk dialog add_account_input
+                    val binding = AddAccountInputBinding.bind(dialog.findViewById(android.R.id.custom) ?: return)
+
                     val visibilityMap = mapOf(
-                        dialog.login_email_input to api.requiresEmail,
-                        dialog.login_password_input to api.requiresPassword,
-                        dialog.login_server_input to api.requiresServer,
-                        dialog.login_username_input to api.requiresUsername
+                        binding.loginEmailInput to api.requiresEmail,
+                        binding.loginPasswordInput to api.requiresPassword,
+                        binding.loginServerInput to api.requiresServer,
+                        binding.loginUsernameInput to api.requiresUsername
                     )
 
                     if (context?.isTvSettings() == true) {
@@ -94,8 +97,8 @@ class SettingsAccount : PreferenceFragmentCompat() {
                             // Band-aid for weird FireTV behavior causing crashes because keyboard covers the screen
                             input.setOnEditorActionListener { textView, actionId, _ ->
                                 if (actionId == EditorInfo.IME_ACTION_NEXT) {
-                                    val view = textView.focusSearch(FOCUS_DOWN)
-                                    return@setOnEditorActionListener view?.requestFocus(FOCUS_DOWN) == true
+                                    val view = textView.focusSearch(View.FOCUS_DOWN)
+                                    return@setOnEditorActionListener view?.requestFocus(View.FOCUS_DOWN) == true
                                 }
                                 return@setOnEditorActionListener true
                             }
@@ -106,12 +109,8 @@ class SettingsAccount : PreferenceFragmentCompat() {
                         }
                     }
 
-                    dialog.login_email_input?.isVisible = api.requiresEmail
-                    dialog.login_password_input?.isVisible = api.requiresPassword
-                    dialog.login_server_input?.isVisible = api.requiresServer
-                    dialog.login_username_input?.isVisible = api.requiresUsername
-                    dialog.create_account?.isGone = api.createAccountUrl.isNullOrBlank()
-                    dialog.create_account?.setOnClickListener {
+                    binding.createAccount?.isGone = api.createAccountUrl.isNullOrBlank()
+                    binding.createAccount?.setOnClickListener {
                         val i = Intent(Intent.ACTION_VIEW)
                         i.data = Uri.parse(api.createAccountUrl)
                         try {
@@ -120,23 +119,23 @@ class SettingsAccount : PreferenceFragmentCompat() {
                             logError(e)
                         }
                     }
-                    dialog.text1?.text = api.name
+                    binding.text1?.text = api.name
 
                     if (api.storesPasswordInPlainText) {
                         api.getLatestLoginData()?.let { data ->
-                            dialog.login_email_input?.setText(data.email ?: "")
-                            dialog.login_server_input?.setText(data.server ?: "")
-                            dialog.login_username_input?.setText(data.username ?: "")
-                            dialog.login_password_input?.setText(data.password ?: "")
+                            binding.loginEmailInput?.setText(data.email ?: "")
+                            binding.loginServerInput?.setText(data.server ?: "")
+                            binding.loginUsernameInput?.setText(data.username ?: "")
+                            binding.loginPasswordInput?.setText(data.password ?: "")
                         }
                     }
 
-                    dialog.apply_btt?.setOnClickListener {
+                    binding.applyBtt?.setOnClickListener {
                         val loginData = InAppAuthAPI.LoginData(
-                            username = if (api.requiresUsername) dialog.login_username_input?.text?.toString() else null,
-                            password = if (api.requiresPassword) dialog.login_password_input?.text?.toString() else null,
-                            email = if (api.requiresEmail) dialog.login_email_input?.text?.toString() else null,
-                            server = if (api.requiresServer) dialog.login_server_input?.text?.toString() else null,
+                            username = if (api.requiresUsername) binding.loginUsernameInput?.text?.toString() else null,
+                            password = if (api.requiresPassword) binding.loginPasswordInput?.text?.toString() else null,
+                            email = if (api.requiresEmail) binding.loginEmailInput?.text?.toString() else null,
+                            server = if (api.requiresServer) binding.loginServerInput?.text?.toString() else null,
                         )
                         ioSafe {
                             val isSuccessful = try {
@@ -160,7 +159,7 @@ class SettingsAccount : PreferenceFragmentCompat() {
                         }
                         dialog.dismissSafe(activity)
                     }
-                    dialog.cancel_btt?.setOnClickListener {
+                    binding.cancelBtt?.setOnClickListener {
                         dialog.dismissSafe(activity)
                     }
                 }
@@ -176,11 +175,14 @@ class SettingsAccount : PreferenceFragmentCompat() {
     private fun showAccountSwitch(context: Context, api: AccountManager) {
         val accounts = api.getAccounts() ?: return
 
-        val builder =
-            AlertDialog.Builder(context, R.style.AlertDialogCustom).setView(R.layout.account_switch)
+        val builder = AlertDialog.Builder(context, R.style.AlertDialogCustom)
+            .setView(R.layout.account_switch)
         val dialog = builder.show()
 
-        dialog.account_add?.setOnClickListener {
+        // Inflate binding untuk dialog account_switch
+        val binding = AccountSwitchBinding.bind(dialog.findViewById(android.R.id.custom) ?: return)
+
+        binding.accountAdd?.setOnClickListener {
             addAccount(api)
             dialog?.dismissSafe(activity)
         }
@@ -201,7 +203,7 @@ class SettingsAccount : PreferenceFragmentCompat() {
             dialog?.dismissSafe(activity)
             api.changeAccount(it.card.accountIndex)
         }
-        val list = dialog.findViewById<RecyclerView>(R.id.account_list)
+        val list = binding.accountList
         list?.adapter = adapter
     }
 

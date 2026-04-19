@@ -12,6 +12,7 @@ import androidx.navigation.fragment.findNavController
 import androidx.preference.PreferenceFragmentCompat
 import com.lagradost.cloudstream3.CommonActivity
 import com.lagradost.cloudstream3.R
+import com.lagradost.cloudstream3.databinding.LogcatBinding
 import com.lagradost.cloudstream3.mvvm.logError
 import com.lagradost.cloudstream3.ui.settings.SettingsFragment.Companion.getPref
 import com.lagradost.cloudstream3.ui.settings.SettingsFragment.Companion.setUpToolbar
@@ -21,7 +22,6 @@ import com.lagradost.cloudstream3.utils.InAppUpdater.Companion.runAutoUpdate
 import com.lagradost.cloudstream3.utils.UIHelper.dismissSafe
 import com.lagradost.cloudstream3.utils.UIHelper.hideKeyboard
 import com.lagradost.cloudstream3.utils.VideoDownloadManager
-import kotlinx.android.synthetic.main.logcat.*
 import okhttp3.internal.closeQuietly
 import java.io.BufferedReader
 import java.io.InputStreamReader
@@ -37,7 +37,6 @@ class SettingsUpdates : PreferenceFragmentCompat() {
     override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
         hideKeyboard()
         setPreferencesFromResource(R.xml.settings_updates, rootKey)
-        //val settingsManager = PreferenceManager.getDefaultSharedPreferences(requireContext())
 
         getPref(R.string.backup_key)?.setOnPreferenceClickListener {
             activity?.backup()
@@ -53,56 +52,60 @@ class SettingsUpdates : PreferenceFragmentCompat() {
             activity?.restorePrompt()
             return@setOnPreferenceClickListener true
         }
-        getPref(R.string.show_logcat_key)?.setOnPreferenceClickListener { pref ->
-            val builder =
-                AlertDialog.Builder(pref.context, R.style.AlertDialogCustom)
-                    .setView(R.layout.logcat)
 
+        getPref(R.string.show_logcat_key)?.setOnPreferenceClickListener { pref ->
+            val builder = AlertDialog.Builder(pref.context, R.style.AlertDialogCustom)
+                .setView(R.layout.logcat)
             val dialog = builder.create()
             dialog.show()
+
+            // Inflate binding untuk dialog logcat
+            val binding = LogcatBinding.bind(dialog.findViewById(android.R.id.custom) ?: return@setOnPreferenceClickListener true)
+
             val log = StringBuilder()
             try {
-                //https://developer.android.com/studio/command-line/logcat
                 val process = Runtime.getRuntime().exec("logcat -d")
-                val bufferedReader = BufferedReader(
-                    InputStreamReader(process.inputStream)
-                )
-
+                val bufferedReader = BufferedReader(InputStreamReader(process.inputStream))
                 var line: String?
                 while (bufferedReader.readLine().also { line = it } != null) {
                     log.append(line)
                 }
+                bufferedReader.close()
+                process.waitFor()
             } catch (e: Exception) {
-                logError(e) // kinda ironic
+                logError(e)
             }
 
             val text = log.toString()
-            dialog.text1?.text = text
+            binding.text1?.text = text
 
-            dialog.copy_btt?.setOnClickListener {
-                val serviceClipboard =
-                    (activity?.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager?)
-                        ?: return@setOnClickListener
+            binding.copyBtt?.setOnClickListener {
+                val serviceClipboard = (activity?.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager?)
+                    ?: return@setOnClickListener
                 val clip = ClipData.newPlainText("logcat", text)
                 serviceClipboard.setPrimaryClip(clip)
                 dialog.dismissSafe(activity)
             }
-            dialog.clear_btt?.setOnClickListener {
+
+            binding.clearBtt?.setOnClickListener {
                 Runtime.getRuntime().exec("logcat -c")
                 dialog.dismissSafe(activity)
             }
-            dialog.save_btt?.setOnClickListener {
+
+            binding.saveBtt?.setOnClickListener {
                 var fileStream: OutputStream? = null
                 try {
-                    fileStream =
-                        VideoDownloadManager.setupStream(
-                            it.context,
-                            "logcat",
-                            null,
-                            "txt",
-                            false
-                        ).fileStream
+                    fileStream = VideoDownloadManager.setupStream(
+                        it.context,
+                        "logcat",
+                        null,
+                        "txt",
+                        false
+                    ).fileStream
                     fileStream?.writer()?.write(text)
+                    activity?.runOnUiThread {
+                        CommonActivity.showToast(activity, R.string.saved, Toast.LENGTH_SHORT)
+                    }
                 } catch (e: Exception) {
                     logError(e)
                 } finally {
@@ -110,24 +113,27 @@ class SettingsUpdates : PreferenceFragmentCompat() {
                     dialog.dismissSafe(activity)
                 }
             }
-            dialog.close_btt?.setOnClickListener {
+
+            binding.closeBtt?.setOnClickListener {
                 dialog.dismissSafe(activity)
             }
+
             return@setOnPreferenceClickListener true
         }
 
-        //Append versionCode to app_version on Manual update pref
+        // Append versionCode to app_version on Manual update pref
         getPref(R.string.manual_check_update_key)?.let {
             var currentVersion = 0L
             context?.let { ctx ->
                 ctx.packageName?.let { pkg ->
-                    ctx.packageManager?.getPackageInfo(pkg,0)?.let { pinfo ->
+                    ctx.packageManager?.getPackageInfo(pkg, 0)?.let { pinfo ->
                         currentVersion = getLongVersionCode(pinfo)
                     }
                 }
             }
-            it.summary = "${getString(R.string.app_version)} r${currentVersion}"
-        }   
+            it.summary = "${getString(R.string.app_version)} r$currentVersion"
+        }
+
         getPref(R.string.manual_check_update_key)?.setOnPreferenceClickListener {
             thread {
                 if (!requireActivity().runAutoUpdate(false)) {
